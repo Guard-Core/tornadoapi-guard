@@ -59,22 +59,17 @@ jobs:
           # the wheel must be COPYed into the image before pip runs
           python3 - <<'EOF'
           import pathlib
-          req = pathlib.Path("live_smoke_stack/requirements.txt")
+          stack = pathlib.Path("live_smoke_stack")
+          wheel = next(stack.glob("tornadoapi_guard-*.whl"))
+          req = stack / "requirements.txt"
           lines = [line for line in req.read_text().splitlines() if not line.startswith("tornadoapi-guard")]
-          lines.append("tornadoapi-guard @ file:///app/tornadoapi_guard-wheel.whl")
+          lines.append(f"tornadoapi-guard @ file:///app/{wheel.name}")
           req.write_text("\n".join(lines) + "\n")
-          wheel_dir = pathlib.Path("live_smoke_stack")
-          wheel = next(wheel_dir.glob("tornadoapi_guard-*.whl"))
-          wheel.rename(wheel_dir / "tornadoapi_guard-wheel.whl")
-          dockerfile = pathlib.Path("live_smoke_stack/Dockerfile")
+          dockerfile = stack / "Dockerfile"
           df = dockerfile.read_text()
           anchor = "COPY requirements.txt /app/"
           assert anchor in df
-          df = df.replace(
-              anchor,
-              anchor + "\nCOPY tornadoapi_guard-wheel.whl /app/",
-          )
-          dockerfile.write_text(df)
+          dockerfile.write_text(df.replace(anchor, anchor + f"\nCOPY {wheel.name} /app/"))
           EOF
 
       - name: Bring the smoke stack up
