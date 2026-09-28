@@ -27,7 +27,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=6 \
   CMD wget -qO- http://127.0.0.1:8000/health
 
-RUN useradd --create-home --uid 10001 guard
+RUN useradd --create-home --uid 10001 guard \
+    && mkdir -p /app/data/ipinfo \
+    && chown -R guard:guard /app
 USER guard
 
 CMD ["python", "main.py"]
