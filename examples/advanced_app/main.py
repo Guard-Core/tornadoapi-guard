@@ -48,7 +48,8 @@ class JSONHandler(SecurityHandler):
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json; charset=utf-8")
-        reason = self._reason or "error"
+        # Static reason phrase lookup: never reflect request-derived text
+        reason = tornado.httputil.responses.get(status_code, "error")
         self.finish(
             _json_dumps(
                 {
