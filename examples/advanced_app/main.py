@@ -144,11 +144,12 @@ class RateStrictHandler(JSONHandler):
 class AdminCheckHandler(JSONHandler):
     @guard_decorator.require_headers({"X-Admin-Token": _ADMIN_TOKEN})
     async def get(self) -> None:
-        client = self.request.remote_ip or "unknown"
+        # No request-derived values in the response: forwarded headers are
+        # attacker-controlled and must not be reflected back.
         self.write_json(
             {
                 "message": "Admin check passed",
-                "details": {"client": client, "timestamp": datetime.now(timezone.utc)},
+                "details": {"timestamp": datetime.now(timezone.utc)},
             }
         )
 
