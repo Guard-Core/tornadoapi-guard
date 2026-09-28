@@ -81,6 +81,18 @@ jobs:
           set -euo pipefail
           base="http://localhost:8000"
 
+          # Wait for the app to finish initializing (engine redis + ipinfo setup)
+          ready=""
+          for i in $(seq 1 30); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$base/")" = "200" ]; then
+              ready=1; break
+            fi
+            sleep 2
+          done
+          if [ -z "$ready" ]; then
+            echo "FAIL: app never became ready"; exit 1
+          fi
+
           check() {
             local name="$1" expected="$2"; shift 2
             local status
