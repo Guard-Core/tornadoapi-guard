@@ -55,7 +55,8 @@ jobs:
           cp -r examples/simple_app live_smoke_stack
           wheel=$(ls examples/live_smoke_wheels/tornadoapi_guard-*.whl | head -n 1)
           cp "$wheel" live_smoke_stack/
-          # Install the wheel from this checkout instead of the PyPI release
+          # Install the wheel from this checkout instead of the PyPI release;
+          # the wheel must be COPYed into the image before pip runs
           python3 - <<'EOF'
           import pathlib
           req = pathlib.Path("live_smoke_stack/requirements.txt")
@@ -65,6 +66,15 @@ jobs:
           wheel_dir = pathlib.Path("live_smoke_stack")
           wheel = next(wheel_dir.glob("tornadoapi_guard-*.whl"))
           wheel.rename(wheel_dir / "tornadoapi_guard-wheel.whl")
+          dockerfile = pathlib.Path("live_smoke_stack/Dockerfile")
+          df = dockerfile.read_text()
+          anchor = "COPY requirements.txt /app/"
+          assert anchor in df
+          df = df.replace(
+              anchor,
+              anchor + "\nCOPY tornadoapi_guard-wheel.whl /app/",
+          )
+          dockerfile.write_text(df)
           EOF
 
       - name: Bring the smoke stack up
