@@ -3,6 +3,18 @@ Release Notes
 
 ___
 
+v1.2.0 (unreleased)
+-------------------
+
+Adapter parity with the family baseline (targets the 1.2.0 adapter train)
+
+- **CI modernization** - `ci.yml` uses `pull_request` instead of `pull_request_target` (no base-branch secrets context on PR code), all actions align on v7 majors, and the release build uses `python -m build` instead of the legacy `setup.py sdist bdist_wheel`.
+- **New workflows to match the adapter set** - `live-smoke.yml` (builds the wheel from the checkout and smoke-tests the example app in Docker), `upstream-drift.yml` (daily suite run against a guard-core@master wheel), and `docksec.yml` (Dockerfile scanning with SARIF).
+- **Added (examples)** - `examples/advanced_app`: production-shaped topology with an nginx edge (connection shedding, forwarded headers), Redis-backed guard state, health/ready endpoints for orchestration, a route-scoped strict rate limit, and an admin-token-protected utility route.
+- **Docs deploy serialization** - `docs.yml` gains the `docs-deploy` concurrency group the other adapters already use.
+
+___
+
 v1.0.0 (2026-09-24)
 -------------------
 
