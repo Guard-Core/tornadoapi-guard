@@ -86,7 +86,8 @@ _ENABLE_REDIS = bool(_REDIS_URL)
 
 
 security_config = SecurityConfig(
-    whitelist=["127.0.0.1", "::1", "10.0.0.0/8"],
+    # Include the Docker client networks so host curls are not flagged
+    whitelist=["127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
     blacklist=["192.168.100.0/24"],
     trusted_proxies=["127.0.0.1", "10.0.0.0/8"],
     trusted_proxy_depth=2,
@@ -100,6 +101,7 @@ security_config = SecurityConfig(
     auto_ban_threshold=5,
     auto_ban_duration=300,
     enable_penetration_detection=True,
+    behavior_scan_response_body=True,
     cloud_ip_refresh_interval=1800,
     log_format="json",
     enable_redis=_ENABLE_REDIS,
