@@ -34,7 +34,7 @@ Running with Docker Compose
 The easiest way to run the example is with Docker Compose, which also brings up a Redis instance:
 
 ```bash
-git clone https://github.com/rennf93/tornadoapi-guard.git
+git clone https://github.com/Guard-Core/tornadoapi-guard.git
 cd tornadoapi-guard
 docker compose up
 ```
@@ -400,4 +400,4 @@ ___
 Source
 ------
 
-The full source code lives at [`examples/simple_app/main.py`](https://github.com/rennf93/tornadoapi-guard/blob/master/examples/simple_app/main.py). Reading that file end-to-end is the fastest way to get comfortable with TornadoAPI Guard.
+The full source code lives at [`examples/simple_app/main.py`](https://github.com/Guard-Core/tornadoapi-guard/blob/master/examples/simple_app/main.py). Reading that file end-to-end is the fastest way to get comfortable with TornadoAPI Guard.

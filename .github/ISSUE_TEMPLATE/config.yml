@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: TornadoAPI Guard Documentation
-    url: https://rennf93.github.io/tornadoapi-guard/
+    url: https://guard-core.github.io/tornadoapi-guard/
     about: Check the documentation for usage information and tutorials
   - name: Usage Questions
-    url: https://github.com/rennf93/tornadoapi-guard/discussions
+    url: https://github.com/Guard-Core/tornadoapi-guard/discussions
     about: Please ask and answer questions in GitHub Discussions

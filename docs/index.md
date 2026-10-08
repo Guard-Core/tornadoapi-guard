@@ -11,13 +11,13 @@ TornadoAPI Guard
 ![TornadoAPI Guard Logo](assets/tornadoapi_guard_legend.svg)
 
 [![PyPI version](https://badge.fury.io/py/tornadoapi-guard.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4)](https://badge.fury.io/py/tornadoapi-guard)
-[![Release](https://github.com/rennf93/tornadoapi-guard/actions/workflows/release.yml/badge.svg)](https://github.com/rennf93/tornadoapi-guard/actions/workflows/release.yml)
+[![Release](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/release.yml/badge.svg)](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/rennf93/tornadoapi-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/rennf93/tornadoapi-guard/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/rennf93/tornadoapi-guard/actions/workflows/code-ql.yml/badge.svg)](https://github.com/rennf93/tornadoapi-guard/actions/workflows/code-ql.yml)
+[![CI](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/code-ql.yml/badge.svg)](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/code-ql.yml)
 
-[![pages-build-deployment](https://github.com/rennf93/tornadoapi-guard/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages)](https://github.com/rennf93/tornadoapi-guard/actions/workflows/pages/pages-build-deployment)
-[![Docs Update](https://github.com/rennf93/tornadoapi-guard/actions/workflows/docs.yml/badge.svg)](https://github.com/rennf93/tornadoapi-guard/actions/workflows/docs.yml)
+[![pages-build-deployment](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages)](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/pages/pages-build-deployment)
+[![Docs Update](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/docs.yml/badge.svg)](https://github.com/Guard-Core/tornadoapi-guard/actions/workflows/docs.yml)
 [![Downloads](https://pepy.tech/badge/tornadoapi-guard)](https://pepy.tech/project/tornadoapi-guard)
 
 `tornadoapi-guard` is a comprehensive security library for Tornado applications, providing middleware to control IPs, log requests, and detect penetration attempts. It integrates seamlessly with Tornado to offer robust protection against various security threats, ensuring your application remains secure and reliable.
@@ -72,21 +72,21 @@ ___
 Example App
 -----------
 
-Inside [examples](https://github.com/rennf93/tornadoapi-guard/tree/master/examples), you can find a simple example app that demonstrates how to use TornadoAPI Guard. The canonical reference implementation lives in `examples/simple_app/main.py`.
+Inside [examples](https://github.com/Guard-Core/tornadoapi-guard/tree/master/examples), you can find a simple example app that demonstrates how to use TornadoAPI Guard. The canonical reference implementation lives in `examples/simple_app/main.py`.
 
 ___
 
 Docker Container
 ----------------
 
-You can also download the example app as a Docker container from [GitHub Container Registry](https://github.com/orgs/rennf93/packages/container/tornadoapi-guard-example).
+You can also download the example app as a Docker container from [GitHub Container Registry](https://github.com/orgs/Guard-Core/packages/container/tornadoapi-guard-example).
 
 ```bash
 # Pull the latest version
-docker pull ghcr.io/rennf93/tornadoapi-guard-example:latest
+docker pull ghcr.io/guard-core/tornadoapi-guard-example:latest
 
 # Or pull a specific version (matches library releases)
-docker pull ghcr.io/rennf93/tornadoapi-guard-example:v1.0.0
+docker pull ghcr.io/guard-core/tornadoapi-guard-example:v1.0.0
 ```
 
 ___
@@ -101,7 +101,7 @@ The easiest way to run the example app is with Docker Compose, which automatical
 
 ```bash
 # Clone the repository
-git clone https://github.com/rennf93/tornadoapi-guard.git
+git clone https://github.com/Guard-Core/tornadoapi-guard.git
 cd tornadoapi-guard
 
 # Start the example app with Redis
@@ -117,14 +117,14 @@ Alternatively, you can run just the container:
 
 ```bash
 # Run with default settings
-docker run --host 0.0.0.0 -p 8000:8000 ghcr.io/rennf93/tornadoapi-guard-example:latest
+docker run --host 0.0.0.0 -p 8000:8000 ghcr.io/guard-core/tornadoapi-guard-example:latest
 
 # Run with custom Redis connection
 docker run --host 0.0.0.0 -p 8000:8000 \
  -e REDIS_URL=redis://your-redis-host:your-redis-port \
  -e REDIS_PREFIX=your-redis-prefix \
  -e IPINFO_TOKEN=your-ipinfo-token \
- ghcr.io/rennf93/tornadoapi-guard-example:latest
+ ghcr.io/guard-core/tornadoapi-guard-example:latest
 ```
 
 The example app includes endpoints that exercise the various security features of TornadoAPI Guard. Because Tornado does not generate OpenAPI documentation automatically, there is no `/docs` UI — see `examples/simple_app/main.py` and the [Example App tutorial](tutorial/examples/example-app.md) for the list of endpoints and their purposes.
