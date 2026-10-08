@@ -8,7 +8,7 @@ keywords: security config, configuration, settings, tornadoapi-guard
 Security Configuration
 ======================
 
-TornadoAPI Guard configuration is provided by `SecurityConfig`, a Pydantic `BaseModel` re-exported from [guard-core](https://github.com/rennf93/guard-core). Every security feature — IP control, rate limiting, behavioral analysis, security headers, Redis, agent telemetry, and the detection engine — is driven by fields on this model.
+TornadoAPI Guard configuration is provided by `SecurityConfig`, a Pydantic `BaseModel` re-exported from [guard-core](https://github.com/Guard-Core/guard-core). Every security feature — IP control, rate limiting, behavioral analysis, security headers, Redis, agent telemetry, and the detection engine — is driven by fields on this model.
 
 ___
 

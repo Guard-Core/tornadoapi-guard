@@ -3,7 +3,7 @@ name = "tornadoapi_guard"
 version = "1.2.0"
 description = "Production-ready security middleware for Tornado - IP filtering, rate limiting, penetration detection, and 20+ per-route security decorators."
 authors = [
-    {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
+    {name = "Renzo Franceschini", email = "rennf93@guard-core.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
@@ -40,11 +40,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rennf93/tornadoapi-guard"
-Documentation = "https://rennf93.github.io/tornadoapi-guard/"
-Repository = "https://github.com/rennf93/tornadoapi-guard"
-Changelog = "https://github.com/rennf93/tornadoapi-guard/blob/master/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/rennf93/tornadoapi-guard/issues"
+Homepage = "https://github.com/Guard-Core/tornadoapi-guard"
+Documentation = "https://guard-core.github.io/tornadoapi-guard/"
+Repository = "https://github.com/Guard-Core/tornadoapi-guard"
+Changelog = "https://github.com/Guard-Core/tornadoapi-guard/blob/master/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/Guard-Core/tornadoapi-guard/issues"
 
 [project.optional-dependencies]
 dev = [

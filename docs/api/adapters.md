@@ -8,7 +8,7 @@ keywords: tornado, adapters, guard-core, protocol, request, response, guard requ
 Adapters
 ========
 
-`tornadoapi-guard` is a thin layer over [guard-core](https://github.com/rennf93/guard-core), a framework-agnostic security engine. guard-core is written against a small set of protocol types (`GuardRequest`, `GuardResponse`, `GuardResponseFactory`) so that it can be reused by different web frameworks. The **adapter** module translates Tornado's concrete types (`RequestHandler`, `HTTPServerRequest`, `HTTPHeaders`) into those protocols.
+`tornadoapi-guard` is a thin layer over [guard-core](https://github.com/Guard-Core/guard-core), a framework-agnostic security engine. guard-core is written against a small set of protocol types (`GuardRequest`, `GuardResponse`, `GuardResponseFactory`) so that it can be reused by different web frameworks. The **adapter** module translates Tornado's concrete types (`RequestHandler`, `HTTPServerRequest`, `HTTPHeaders`) into those protocols.
 
 All adapter classes live in `tornadoapi_guard.adapters` and are re-exported from the top-level package:
 
