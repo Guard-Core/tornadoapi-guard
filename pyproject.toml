@@ -1,6 +1,6 @@
 [project]
 name = "tornadoapi_guard"
-version = "1.2.0"
+version = "1.2.1"
 description = "Production-ready security middleware for Tornado - IP filtering, rate limiting, penetration detection, and 20+ per-route security decorators."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@guard-core.com"}
