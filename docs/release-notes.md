@@ -10,6 +10,16 @@ Release Notes
 
 ___
 
+v1.2.1 (2026-10-08)
+-------------------
+
+Guard-Core org migration
+------------------------
+
+Metadata release: PyPI project URLs, the docs canonical domain, and all repository links moved to the Guard-Core org. No code changes.
+
+___
+
 v1.0.0 (2026-09-24)
 -------------------
 
