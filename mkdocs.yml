@@ -1,6 +1,6 @@
 site_name: TornadoAPI Guard
 site_description: Security middleware for Tornado applications
-site_url: https://guard-core.github.io/tornadoapi-guard/latest/
+site_url: https://guard-core.github.io/tornadoapi-guard/
 repo_name: Guard-Core/tornadoapi-guard
 repo_url: https://github.com/Guard-Core/tornadoapi-guard
 edit_uri: edit/master/docs/
