@@ -6,7 +6,6 @@
 
 ---
 
-
 ## Documentation
 
 📚 **[Documentation](https://guard-core.github.io/tornadoapi-guard/latest/)** - full technical documentation for this package.
@@ -252,8 +251,8 @@ See [`examples/simple_app/main.py`](examples/simple_app/main.py) for a full refe
 
 ___
 
-Documentation
--------------
+Building the docs
+-----------------
 
 Full documentation is published at <https://guard-core.github.io/tornadoapi-guard/latest/>, or build locally with `make serve-docs`.
 
