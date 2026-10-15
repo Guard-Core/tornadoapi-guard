@@ -128,6 +128,13 @@ async def test_response_properties() -> None:
     assert response.body == b"ok"
 
 
+async def test_response_read_body_prefix() -> None:
+    response = TornadoGuardResponse(status_code=200, body=b"abcdef")
+    assert await response.read_body_prefix(3) == b"abc"
+    assert await response.read_body_prefix(0) == b""
+    assert await TornadoGuardResponse(status_code=204).read_body_prefix(5) == b""
+
+
 async def test_response_headers_mutable() -> None:
     response = TornadoGuardResponse(status_code=200)
     response.headers["X-New"] = "v"

@@ -36,8 +36,8 @@ Tornado is async, so this adapter imports `guard_core.*` directly (the Flask and
 ### Package Components
 
 - **`tornadoapi_guard/__init__.py`** - Re-exports items from `guard_core` so users can `from tornadoapi_guard import SecurityConfig, SecurityDecorator, ...` without knowing about guard-core. Also exports `SecurityMiddleware` and `SecurityHandler`, and the adapter classes `TornadoGuardRequest`, `TornadoGuardResponse`, `TornadoResponseFactory`, `apply_guard_response`, `unwrap_response`.
-- **`tornadoapi_guard/middleware.py`** - `SecurityMiddleware`, the orchestrator. It builds the `SecurityCheckPipeline` from the config, runs pre-processing (bypass handling, route resolution, the 17 checks) and post-processing (metrics, logging), applies CORS/pre-flight headers, and exposes `set_decorator_handler` so the pipeline can be derived from registered route config.
-- **`tornadoapi_guard/handler.py`** - `SecurityHandler(RequestHandler)`. Wrap handler classes that should be guarded: `prepare()` runs pre-flight headers, pre-processing, CORS preflight handling, and applies a blocking response via `apply_guard_response`; `on_finish()` schedules post-processing as a background task.
+- **`tornadoapi_guard/middleware.py`** - `SecurityMiddleware`, the orchestrator. It builds the `SecurityCheckPipeline` from the config, runs pre-processing exactly like fastapi-guard's `dispatch` (CORS preflight, engine passthrough and route bypass handlers, route resolution, the 17 checks) and the post-processing response pass (return rules, metrics, security headers, CORS, modifier), and exposes `set_decorator_handler` so the pipeline can be derived from registered route config.
+- **`tornadoapi_guard/handler.py`** - `SecurityHandler(RequestHandler)`. Wrap handler classes that should be guarded: `prepare()` runs pre-processing and writes any early response (blocked, preflight, bypass) via `apply_guard_response`; `finish()` is overridden to run the engine response pass before the response is flushed.
 - **`tornadoapi_guard/adapters.py`** - Protocol adapters bridging Tornado types to guard-core protocols: `TornadoGuardRequest` (wraps `RequestHandler` + `HTTPServerRequest`), `TornadoGuardResponse` (standalone response container), `TornadoResponseFactory`, plus `apply_guard_response()` (writes a guard response back through the handler) and `unwrap_response()`.
 
 ### Public API
@@ -58,7 +58,7 @@ Tornado's architecture differs from FastAPI/Starlette:
 - `RequestHandler` is the main abstraction (not a separate request/response pair)
 - `RequestHandler.request` gives `HTTPServerRequest`
 - `RequestHandler.prepare()` is the async hook for pre-processing (security pipeline)
-- `RequestHandler.on_finish()` is the post-processing hook (metrics, logging)
+- `RequestHandler.finish()` is where the response is flushed, so the adapter overrides it to run the response pass first
 - No built-in response object; responses are written via `handler.write()` / `handler.finish()`
 - `request.remote_ip` for client IP
 - `request.headers` for headers (`HTTPHeaders`, case-insensitive)
@@ -198,7 +198,7 @@ tornadoapi-guard/
 ├── tornadoapi_guard/      # Adapter package (thin layer over guard-core)
 │   ├── __init__.py        # Re-exports from guard_core + SecurityMiddleware/SecurityHandler
 │   ├── middleware.py      # SecurityMiddleware (pipeline orchestration)
-│   ├── handler.py         # SecurityHandler(RequestHandler) (prepare/on_finish hooks)
+│   ├── handler.py         # SecurityHandler(RequestHandler) (prepare/finish hooks)
 │   ├── adapters.py        # Tornado request/response protocol adapters
 │   ├── .agents/skills/tornadoapi-guard/  # Package skill (SKILL.md)
 │   └── py.typed           # PEP 561 marker

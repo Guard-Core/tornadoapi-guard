@@ -1,6 +1,6 @@
 ---
 name: tornadoapi-guard
-description: TornadoAPI Guard, the Tornado security adapter over guard-core. Use when securing Tornado apps with IP filtering, rate limiting, penetration detection, security headers, cloud-provider blocking, route-level security decorators, or behavioral rules; when wiring SecurityHandler (RequestHandler.prepare/on_finish) or SecurityMiddleware into a tornado.web.Application via the security_middleware setting; when adapting HTTPServerRequest/RequestHandler types to guard-core's GuardRequest/GuardResponse protocols; or when debugging the silent no-guard path when the middleware setting is missing, decorator-route visibility via set_decorator_handler, Redis connectivity, or bytes-valued request.arguments. Also use when porting fastapi-guard patterns to Tornado or choosing the right Guard adapter.
+description: TornadoAPI Guard, the Tornado security adapter over guard-core. Use when securing Tornado apps with IP filtering, rate limiting, penetration detection, security headers, cloud-provider blocking, route-level security decorators, or behavioral rules; when wiring SecurityHandler (RequestHandler.prepare/finish) or SecurityMiddleware into a tornado.web.Application via the security_middleware setting; when adapting HTTPServerRequest/RequestHandler types to guard-core's GuardRequest/GuardResponse protocols; or when debugging the silent no-guard path when the middleware setting is missing, decorator-route visibility via set_decorator_handler, Redis connectivity, or bytes-valued request.arguments. Also use when porting fastapi-guard patterns to Tornado or choosing the right Guard adapter.
 ---
 
 # TornadoAPI Guard
@@ -16,7 +16,7 @@ TornadoAPI Guard is a thin adapter: all security logic (models, handlers, decora
 * `SecurityMiddleware(config=...)` is keyword-only; call `await security_middleware.initialize()` before serving.
 * All behavior is guard-core's `SecurityConfig`; do not mutate handlers directly.
 * Route rules: `SecurityDecorator` writes per-route `RouteConfig`; wire it with `security_middleware.set_decorator_handler(guard_decorator)` so the pipeline is derived from registered routes.
-* Tornado shapes to remember: `prepare()` / `on_finish()` hooks, `request.remote_ip`, case-insensitive `HTTPHeaders`, bytes-valued `request.arguments`, no built-in response object (`handler.write()` / `handler.finish()`).
+* Tornado shapes to remember: `prepare()` / `finish()` hooks, `request.remote_ip`, case-insensitive `HTTPHeaders`, bytes-valued `request.arguments`, no built-in response object (`handler.write()` / `handler.finish()`).
 
 ## Installation
 
@@ -59,7 +59,7 @@ app = tornado.web.Application(
 )
 ```
 
-`SecurityHandler.prepare()` runs pre-flight headers, pre-processing (bypass handling, route resolution, the 17-check `SecurityCheckPipeline`), and CORS preflight handling; a blocking verdict is written through `apply_guard_response`. `on_finish()` schedules post-processing (metrics, logging) as a background task. `security_middleware.agent_stats` exposes the agent's live buffer state for health-check endpoints.
+`SecurityHandler.prepare()` runs pre-processing (CORS preflight, engine passthrough and bypass handlers, route resolution, the 17-check `SecurityCheckPipeline`); an early response is written through `apply_guard_response` and skips the response pass. `finish()` runs the engine response pass (return rules, metrics, security headers, CORS, modifier) before the flush. `security_middleware.agent_stats` exposes the agent's live buffer state for health-check endpoints.
 
 ## Route-Level Security Decorators
 

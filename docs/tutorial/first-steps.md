@@ -13,7 +13,7 @@ Let's start with a simple example that shows how to add TornadoAPI Guard to your
 Create a Tornado application
 ----------------------------
 
-First, create a new Tornado application. TornadoAPI Guard integrates via two objects: the `SecurityMiddleware` (which holds the security pipeline) and the `SecurityHandler` base class (which wires the pipeline into Tornado's `prepare`/`on_finish` hooks). Every handler that should be protected must inherit from `SecurityHandler`.
+First, create a new Tornado application. TornadoAPI Guard integrates via two objects: the `SecurityMiddleware` (which holds the security pipeline) and the `SecurityHandler` base class (which wires the pipeline into Tornado's `prepare`/`finish` hooks). Every handler that should be protected must inherit from `SecurityHandler`.
 
 ```python
 import asyncio
@@ -85,7 +85,7 @@ ___
 Inherit from SecurityHandler
 ----------------------------
 
-Every request handler that should be protected must subclass `SecurityHandler`. The base class overrides `prepare()` to run the full security pipeline (IP checks, rate limiting, penetration detection, etc.) before your method runs, and overrides `on_finish()` to run post-processing hooks (metrics, behavioral return rules, logging). If you inherit from `tornado.web.RequestHandler` directly, no security checks will run for that route.
+Every request handler that should be protected must subclass `SecurityHandler`. The base class overrides `prepare()` to run the full security pipeline (IP checks, rate limiting, penetration detection, etc.) before your method runs, and overrides `finish()` to run the response pass (metrics, behavioral return rules, security headers, CORS and your `custom_response_modifier`) before the response is flushed. If you inherit from `tornado.web.RequestHandler` directly, no security checks will run for that route.
 
 ```python
 from tornadoapi_guard import SecurityHandler

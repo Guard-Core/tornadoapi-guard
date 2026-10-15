@@ -8,7 +8,7 @@ keywords: security middleware, tornado middleware, api security, middleware conf
 SecurityMiddleware
 ==================
 
-`SecurityMiddleware` is the core orchestration object of TornadoAPI Guard. It owns the security pipeline, the event bus, the metrics collector, and the response factory. Unlike FastAPI's `BaseHTTPMiddleware`, Tornado has no built-in `call_next` mechanism, so the middleware exposes its lifecycle as **explicit methods** that the `SecurityHandler` base class calls from `prepare()` (before the handler method runs) and `on_finish()` (after the response is sent). You never register it on the router directly — instead you pass the instance to `tornado.web.Application` as the `security_middleware` setting.
+`SecurityMiddleware` is the core orchestration object of TornadoAPI Guard. It owns the security pipeline, the event bus, the metrics collector, and the response factory. Unlike FastAPI's `BaseHTTPMiddleware`, Tornado has no built-in `call_next` mechanism, so the middleware exposes its lifecycle as **explicit methods** that the `SecurityHandler` base class calls from `prepare()` (before the handler method runs) and `finish()` (before the response is flushed). You never register it on the router directly - instead you pass the instance to `tornado.web.Application` as the `security_middleware` setting.
 
 See also the [`SecurityHandler` API](security-handler.md) reference for the base class that invokes the middleware.
 
@@ -44,48 +44,30 @@ RequestHandler.prepare()
     ↓
 SecurityHandler.prepare()
     ↓
-1. SecurityMiddleware.apply_pre_flight_headers(handler)
-    └─ Writes configured security headers + CORS headers to the handler
-    ↓
-2. SecurityMiddleware.run_pre_processing(handler)
-    ├─ Build TornadoGuardRequest from handler.request
-    ├─ Populate request state (route config, client IP, start time)
-    ├─ Check passthrough / excluded paths
-    ├─ SecurityCheckPipeline.execute()
-    │   ├─ RouteConfigCheck
-    │   ├─ EmergencyModeCheck
-    │   ├─ HttpsEnforcementCheck
-    │   ├─ RequestLoggingCheck
-    │   ├─ RequestSizeContentCheck
-    │   ├─ RequiredHeadersCheck
-    │   ├─ AuthenticationCheck
-    │   ├─ ReferrerCheck
-    │   ├─ CustomValidatorsCheck
-    │   ├─ TimeWindowCheck
-    │   ├─ CloudIpRefreshCheck
-    │   ├─ IpSecurityCheck
-    │   ├─ CloudProviderCheck
-    │   ├─ UserAgentCheck
-    │   ├─ RateLimitCheck
-    │   ├─ SuspiciousActivityCheck
-    │   └─ CustomRequestCheck
-    ├─ If any check returns a blocking response:
-    │     └─ Apply security headers, CORS headers, custom modifier → return
+1. SecurityMiddleware.run_pre_processing(handler)
+    ├─ Initialize handlers on first use (Redis unavailable → 503 + Retry-After)
+    ├─ Build TornadoGuardRequest, populate request state (start time, route id)
+    ├─ CORS preflight (pipeline first, then the preflight response)
+    ├─ Engine BypassHandler.handle_passthrough
+    │     ├─ Excluded path → scoped (pipeline runs only the checks enforced there)
+    │     └─ No client address → fail_secure 403
+    ├─ Route config + engine BypassHandler.handle_security_bypass
+    │     └─ "all" bypass → calls the real handler method, applies the modifier
+    ├─ SecurityCheckPipeline.execute()  (17 checks)
     └─ Process behavioral "usage" rules
+    ↓  (any response above is written by apply_guard_response, CORS attached,
+    ↓   and skips step 3)
+2. Handler method runs (get / post / put / ...)
     ↓
-3. Handler method runs (get / post / put / ...)
+SecurityHandler.finish()
     ↓
-RequestHandler.on_finish()
-    ↓
-SecurityHandler.on_finish()
-    ↓
-4. SecurityMiddleware.run_post_processing(handler)
-    ├─ Reconstruct response from handler state
-    ├─ Collect metrics and emit events
-    └─ Process behavioral "return" rules
+3. SecurityMiddleware.run_post_processing(handler)   (before the flush)
+    ├─ Route and global behavioral return rules
+    ├─ Collect request metrics
+    └─ Security headers, CORS headers, custom_response_modifier, written back
 ```
 
-The 17-check security pipeline is identical to the one in fastapi-guard since it lives in `guard_core`. What differs is **where** the pipeline is invoked: the Tornado adapter calls it from `SecurityHandler.prepare()` rather than from a `dispatch` coroutine.
+The 17-check security pipeline is identical to the one in fastapi-guard since it lives in `guard_core`. What differs is **where** the pipeline is invoked: the Tornado adapter calls it from `SecurityHandler.prepare()` and runs the response pass from `SecurityHandler.finish()`, rather than from a `dispatch` coroutine.
 
 Core Components
 ---------------
@@ -170,12 +152,14 @@ async def run_pre_processing(
     self, handler: RequestHandler
 ) -> GuardResponse | None:
     """
-    Run the full security pipeline for an incoming request.
+    Run the engine request flow for an incoming request.
 
     Called automatically by SecurityHandler.prepare(). Returns a
-    GuardResponse when any check blocks the request (in which case
-    SecurityHandler writes the blocking response back through the
-    handler), or None when the request may proceed.
+    GuardResponse when the request is answered without reaching the
+    handler method (blocked, CORS preflight, route bypass, fail_secure
+    403 for a missing client address, Redis unavailable 503), in which
+    case SecurityHandler writes it back through the handler, or None
+    when the request may proceed to the handler method.
 
     Args:
         handler: The current Tornado RequestHandler instance.
@@ -188,24 +172,14 @@ run_post_processing
 ```python
 async def run_post_processing(self, handler: RequestHandler) -> None:
     """
-    Run post-processing hooks after the handler method has finished.
+    Run the engine response pass on the outgoing response.
 
-    Called automatically by SecurityHandler.on_finish(). Performs:
-        - Metrics collection
-        - Security event emission
-        - Behavioral return-pattern processing
-    """
-```
-
-apply_pre_flight_headers
-------------------------
-
-```python
-async def apply_pre_flight_headers(self, handler: RequestHandler) -> None:
-    """
-    Write the configured security headers (CSP, HSTS, frame options, etc.)
-    and — if the request carries an Origin header — CORS headers onto the
-    handler before the pipeline runs.
+    Called automatically by SecurityHandler.finish() before the response
+    is flushed. Performs:
+        - Route and global behavioral return-pattern processing
+        - Request metrics collection
+        - Security headers, CORS headers and custom_response_modifier,
+          applied back onto the handler
     """
 ```
 
@@ -347,6 +321,6 @@ ___
 See Also
 --------
 
-- [SecurityHandler](security-handler.md) - Base class that invokes the middleware from `prepare` and `on_finish`
+- [SecurityHandler](security-handler.md) - Base class that invokes the middleware from `prepare` and `finish`
 - [Decorators](decorators.md) - Route-level security decorators
 - [API Overview](overview.md) - Complete API reference
