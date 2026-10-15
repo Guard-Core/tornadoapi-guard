@@ -114,7 +114,7 @@ Snapshots the current state of a `RequestHandler` into a `TornadoGuardResponse`.
 - `handler._headers` (Tornado's internal `HTTPHeaders` container) for the accumulated response headers.
 - `handler._write_buffer` for the accumulated response body.
 
-Used by `SecurityMiddleware.run_post_processing` to build a response object from a handler that has already written its reply, so that behavioral return rules and metrics collectors can see the actual status / headers / body that went on the wire.
+Used by `SecurityMiddleware.run_post_processing` to build a response object from a handler that has already written its reply, so that behavioral return rules and metrics collectors can see the actual status / headers / body before they are flushed to the client. `SecurityHandler.finish()` runs the response pass at that point, so any change the pass makes (security headers, CORS headers, `custom_response_modifier`) is written back onto the handler and reaches the client.
 
 ___
 
@@ -179,7 +179,7 @@ Writing Custom Hooks
 `SecurityConfig` accepts two user-provided callables:
 
 - `custom_request_check(request)` — runs at the end of the security pipeline. Return a `GuardResponse` to short-circuit the request, or `None` to let it through.
-- `custom_response_modifier(response)` — runs during post-processing. Receives the built response and may mutate its headers (or construct a new response) before the middleware hands it back.
+- `custom_response_modifier(response)` - runs during the response pass in `SecurityHandler.finish()`, before the response is flushed. Receives the response built from the handler (and the pipeline's own blocking responses) and may mutate its headers (or construct a new response); the status, header and body changes reach the client.
 
 Use `TornadoGuardResponse` for return values so that `SecurityMiddleware` can apply headers, CORS, and the custom modifier uniformly. The pattern below mirrors `examples/simple_app/main.py`:
 
@@ -227,7 +227,7 @@ ___
 Per-handler State
 -----------------
 
-`TornadoGuardRequest.state` returns a `SimpleNamespace` that the middleware uses to stash per-request data: the guard request itself, the resolved route config, the extracted client IP, and the request start time. Behavioral hooks, post-processing, and custom validators read from this namespace.
+`TornadoGuardRequest.state` returns a `SimpleNamespace` that the middleware uses to stash per-request data: the guard request itself, the resolved route config, the extracted client IP, and the request start time. Behavioral hooks, the response pass, and custom validators read from this namespace.
 
 The storage is backed by a module-level `WeakKeyDictionary` keyed by the handler instance:
 

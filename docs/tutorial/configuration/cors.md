@@ -8,7 +8,7 @@ keywords: tornado cors, cors configuration, api security, cross origin resource 
 CORS Configuration
 ==================
 
-TornadoAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration through the `SecurityConfig` model. Unlike frameworks that ship with a standalone CORS middleware, the Tornado adapter applies CORS headers directly from the handler pipeline: whenever a request carries an `Origin` header and `enable_cors=True` is set on the config, `SecurityHandler.apply_pre_flight_headers()` calls `security_headers_manager.get_cors_headers(origin)` and writes the resulting headers onto the response.
+TornadoAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration through the `SecurityConfig` model. Unlike frameworks that ship with a standalone CORS middleware, the Tornado adapter applies CORS headers directly from the handler pipeline: whenever `enable_cors=True` is set on the config, the CORS preflight is answered from `SecurityHandler.prepare()`, and the engine response pass in `SecurityHandler.finish()` writes the CORS headers onto the response (blocked responses carry them too).
 
 The generated headers include:
 

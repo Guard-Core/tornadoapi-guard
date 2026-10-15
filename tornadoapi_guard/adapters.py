@@ -107,6 +107,11 @@ class TornadoGuardResponse:
     def body(self) -> bytes | None:
         return self._body
 
+    async def read_body_prefix(self, max_bytes: int) -> bytes:
+        if max_bytes <= 0:
+            return b""
+        return (self._body or b"")[:max_bytes]
+
     @classmethod
     def from_handler(cls, handler: RequestHandler) -> TornadoGuardResponse:
         raw_headers = getattr(handler, "_headers", None)
@@ -157,6 +162,28 @@ def apply_guard_response(
     if body:
         handler.write(body)
     handler.finish()
+
+
+def _normalize_header_name(name: str) -> str:
+    return "-".join(part.capitalize() for part in name.split("-"))
+
+
+def sync_guard_response(
+    handler: RequestHandler,
+    before_headers: Mapping[str, str],
+    before_body: bytes | None,
+    response: GuardResponse,
+) -> None:
+    if response.status_code != handler.get_status():
+        handler.set_status(response.status_code)
+    after = {_normalize_header_name(k): v for k, v in response.headers.items()}
+    for name in before_headers.keys() - after.keys():
+        handler.clear_header(name)
+    for name, value in after.items():
+        if before_headers.get(name) != value:
+            handler.set_header(name, value)
+    if response.body != before_body:
+        cast(Any, handler)._write_buffer = [response.body or b""]
 
 
 def unwrap_response(guard_response: GuardResponse) -> TornadoGuardResponse:

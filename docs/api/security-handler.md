@@ -2,7 +2,7 @@
 
 title: SecurityHandler API - TornadoAPI Guard
 description: Complete API reference for TornadoAPI Guard's SecurityHandler base class and its lifecycle hooks
-keywords: tornado, security, middleware, request handler, lifecycle hooks, prepare, on_finish
+keywords: tornado, security, middleware, request handler, lifecycle hooks, prepare, finish
 ---
 
 SecurityHandler
@@ -11,7 +11,7 @@ SecurityHandler
 The `SecurityHandler` class is the Tornado-specific base class that every handler inherits from in order to participate in the `tornadoapi-guard` security pipeline.
 
 !!! info "Why a base handler instead of middleware?"
-    Tornado does not have an application-level middleware chain like ASGI frameworks (FastAPI, Starlette). There is no `app.add_middleware(...)` equivalent. Instead, Tornado exposes pre-/post-processing hooks on `tornado.web.RequestHandler` (`prepare`, `on_finish`). `tornadoapi-guard` plugs into these hooks through a base class: subclassing `SecurityHandler` is what "attaches" the security pipeline to a route.
+    Tornado does not have an application-level middleware chain like ASGI frameworks (FastAPI, Starlette). There is no `app.add_middleware(...)` equivalent. Instead, Tornado exposes hooks on `tornado.web.RequestHandler` (`prepare`, `finish`). `tornadoapi-guard` plugs into these hooks through a base class: subclassing `SecurityHandler` is what "attaches" the security pipeline to a route.
 
 ___
 
@@ -24,7 +24,7 @@ from tornado.web import RequestHandler
 
 class SecurityHandler(RequestHandler):
     async def prepare(self) -> None: ...
-    def on_finish(self) -> None: ...
+    def finish(self, chunk=None) -> Future[None]: ...
     def _get_security_middleware(self) -> SecurityMiddleware | None: ...
 ```
 
@@ -41,43 +41,36 @@ async def prepare(self) -> None:
     if middleware is None:
         return
 
-    await middleware.apply_pre_flight_headers(self)
-
-    blocking = await middleware.run_pre_processing(self)
-    if blocking is not None:
-        apply_guard_response(self, blocking)
-        return
+    early = await middleware.run_pre_processing(self)
+    if early is not None:
+        apply_guard_response(self, early)
 ```
 
 `prepare()` runs **before** the HTTP method (`get`, `post`, etc.) is dispatched. `SecurityHandler` overrides it to:
 
 1. Look up the middleware via `self.application.settings["security_middleware"]`.
-2. Call `middleware.apply_pre_flight_headers(self)` to set security and CORS headers on the response (so headers are present even if the handler later writes an error or short-circuits).
-3. Call `middleware.run_pre_processing(self)` to execute the 17-check security pipeline (route config, emergency mode, HTTPS enforcement, request logging, request size/content, required headers, authentication, referrer, custom validators, time window, cloud IP refresh, IP security, cloud provider, user agent, rate limit, suspicious activity, and custom request check).
-4. If the pipeline returns a blocking response, `apply_guard_response()` writes the status, headers, and body back through the handler (via `clear`, `set_status`, `set_header`, `write`, `finish`). The actual HTTP method is **not** invoked.
+2. Call `middleware.run_pre_processing(self)`, which mirrors fastapi-guard's `dispatch`: the CORS preflight, the engine passthrough handling (excluded paths stay scoped so the checks that apply to them still run, and a request with no client address gets the `fail_secure` 403), the route all-checks bypass (the real handler method is called and the response modifier applied), and the 17-check security pipeline (route config, emergency mode, HTTPS enforcement, request logging, request size/content, required headers, authentication, referrer, custom validators, time window, cloud IP refresh, IP security, cloud provider, user agent, rate limit, suspicious activity, and custom request check).
+3. If any of those produces a response (blocked, preflight, bypass, or the Redis-unavailable 503), `apply_guard_response()` writes the status, headers, and body back through the handler (via `clear`, `set_status`, `set_header`, `write`, `finish`) with the CORS headers attached. The actual HTTP method is **not** invoked again, and this response does not go through the response pass below, so it emits no request metrics.
 
 Because `prepare()` is `async`, the pipeline can perform async work (Redis lookups, IPInfo API calls, agent event publishing) without blocking the Tornado IOLoop.
 
 ___
 
-Lifecycle Hook: `on_finish`
----------------------------
+Response Pass: `finish`
+-----------------------
 
 ```python
-def on_finish(self) -> None:
-    middleware = self._get_security_middleware()
-    if middleware is None:
-        return
-    asyncio.create_task(middleware.run_post_processing(self))
+def finish(self, chunk=None) -> Future[None]:
+    ...
 ```
 
-`on_finish()` runs **after** the response has been sent to the client. `SecurityHandler` overrides it to schedule `middleware.run_post_processing(self)` via `asyncio.create_task`. Post-processing includes:
+When the request proceeds to your handler method, `SecurityHandler` overrides `finish()` so the engine response pass runs on the outgoing response **before it is flushed**, exactly like fastapi-guard's `_process_response`. `finish()` returns a future (like Tornado's own), so `await self.finish()` and a bare `self.finish()` both work, and a second call (for example Tornado's auto-finish) returns the same pending future. The pass:
 
-- Behavioral return-rule processing (for example, "ban after N `404` responses in 60 s").
-- Metrics emission (response time, status code, route).
-- Event publishing to the Guard Agent (if configured).
+- Processes route and global behavioral return rules, including body-based patterns, because the buffered body is visible before the flush.
+- Collects request metrics (response time, status code).
+- Applies the security headers, the CORS headers, and `custom_response_modifier`. Header, status and body changes made by the modifier reach the client.
 
-Running post-processing as a fire-and-forget task keeps the response path fast: the client sees the response as soon as the handler finishes, and book-keeping happens in the background.
+If the handler already flushed part of the response (`flush()` before `finish()`), the headers are on the wire, so the pass still observes the response (metrics and return rules over what is buffered) but cannot change what was sent. If the pass itself raises, the error is logged and the response is finished unmodified.
 
 ___
 
@@ -92,7 +85,7 @@ def _get_security_middleware(self) -> SecurityMiddleware | None:
     return None
 ```
 
-Internal lookup. Returns the `SecurityMiddleware` instance stored in `application.settings["security_middleware"]`, or `None` if no middleware is configured. When `None` is returned, both `prepare()` and `on_finish()` short-circuit — see [Degraded mode](#degraded-mode) below.
+Internal lookup. Returns the `SecurityMiddleware` instance stored in `application.settings["security_middleware"]`, or `None` if no middleware is configured. When `None` is returned, both `prepare()` and `finish()` short-circuit - see [Degraded mode](#degraded-mode) below.
 
 ___
 
@@ -171,12 +164,9 @@ ___
 Interaction with `set_default_headers`
 --------------------------------------
 
-`tornadoapi-guard` does **not** override `set_default_headers` on `SecurityHandler`. Security headers are applied in `prepare()` via `apply_pre_flight_headers` instead, for one reason: the `SecurityHeadersManager.get_headers()` method is asynchronous (it may read configuration from Redis), and Tornado's `set_default_headers` is **synchronous**. An async operation cannot complete inside a sync hook.
+`tornadoapi-guard` does **not** override `set_default_headers` on `SecurityHandler`. Security headers are applied by the engine response pass in `finish()`, because the `SecurityHeadersManager.get_headers()` method is asynchronous (it may read configuration from Redis) and Tornado's `set_default_headers` is **synchronous**.
 
-This has two practical consequences:
-
-1. You are free to override `set_default_headers` on your own handlers to add static headers (for example, `X-Service-Name`). The headers you set there are applied first, and `apply_pre_flight_headers` then adds (or overrides) the guard-managed security and CORS headers on top.
-2. The guard-managed headers are attached even when the pipeline returns a blocking response, because `apply_pre_flight_headers` runs **before** `run_pre_processing`. A client that is rate-limited will still receive the correct `Content-Security-Policy`, `X-Frame-Options`, and CORS headers on the `429` response.
+You are free to override `set_default_headers` on your own handlers to add static headers (for example, `X-Service-Name`). The headers you set there are applied first, and the response pass then adds (or overrides) the guard-managed security and CORS headers on top. Like fastapi-guard, responses produced by the pipeline itself (a `429` for a rate-limited client, for example) carry the CORS headers but not the security headers, which are only added to responses that came out of your handler.
 
 ___
 
@@ -186,7 +176,7 @@ Degraded Mode
 If a handler inherits from `SecurityHandler` but the `Application` does **not** have a `security_middleware` entry in its settings (for example, in a unit test, a minimal sandbox, or during local development without the full middleware stack), `_get_security_middleware()` returns `None` and both hooks short-circuit:
 
 - `prepare()` returns immediately — no headers are injected, no pipeline runs.
-- `on_finish()` returns immediately — no post-processing is scheduled.
+- `finish()` finishes the response immediately - no response pass runs.
 
 In this degraded state `SecurityHandler` behaves exactly like a plain `tornado.web.RequestHandler`. This is intentional: it lets you write test fixtures that instantiate handlers without having to stand up a full `SecurityMiddleware` and its Redis/agent dependencies. Just remember that **no security checks are being performed** when the middleware is absent.
 

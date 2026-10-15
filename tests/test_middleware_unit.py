@@ -6,7 +6,6 @@ from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import tornado.httputil
 from guard_core.decorators.base import RouteConfig
 from guard_core.handlers.cloud_handler import cloud_handler
 from guard_core.handlers.security_headers_handler import security_headers_manager
@@ -295,64 +294,13 @@ async def test_populate_guard_state_endpoint_missing(
     assert not hasattr(guard_request.state, "guard_route_id")
 
 
-async def test_check_bypass_no_client_host(
-    simple_middleware: SecurityMiddleware,
-) -> None:
-    handler = _make_handler(remote_ip="")
-    guard_request = TornadoGuardRequest(handler)
-    result = await simple_middleware._check_bypass(guard_request, None)
-    assert result is True
-
-
-async def test_check_bypass_path_excluded() -> None:
-    config = SecurityConfig(
-        geo_ip_handler=None,
-        enable_redis=False,
-        enable_penetration_detection=False,
-        exclude_paths=["/health"],
-    )
-    middleware = SecurityMiddleware(config=config)
-    handler = _make_handler(path="/health")
-    guard_request = TornadoGuardRequest(handler)
-    result = await middleware._check_bypass(guard_request, None)
-    assert result is True
-    await middleware.reset()
-
-
-async def test_check_bypass_route_all(
-    simple_middleware: SecurityMiddleware,
-) -> None:
-    handler = _make_handler()
-    guard_request = TornadoGuardRequest(handler)
-    route_config = RouteConfig()
-    route_config.bypassed_checks = {"all"}
-    result = await simple_middleware._check_bypass(guard_request, route_config)
-    assert result is True
-
-
-async def test_check_bypass_route_all_passive_mode() -> None:
-    config = SecurityConfig(
-        geo_ip_handler=None,
-        enable_redis=False,
-        enable_penetration_detection=False,
-        passive_mode=True,
-    )
-    middleware = SecurityMiddleware(config=config)
-    handler = _make_handler()
-    guard_request = TornadoGuardRequest(handler)
-    route_config = RouteConfig()
-    route_config.bypassed_checks = {"all"}
-    result = await middleware._check_bypass(guard_request, route_config)
-    assert result is False
-    await middleware.reset()
-
-
-async def test_run_pre_processing_bypass_returns_none(
+async def test_run_pre_processing_no_client_host_is_fail_secure_403(
     simple_middleware: SecurityMiddleware,
 ) -> None:
     handler = _make_handler(remote_ip="")
     result = await simple_middleware.run_pre_processing(handler)
-    assert result is None
+    assert result is not None
+    assert result.status_code == 403
 
 
 async def test_run_pre_processing_lazy_builds_pipeline() -> None:
@@ -410,42 +358,6 @@ async def test_run_pre_processing_triggers_usage_rules(
     ) as mock_rules:
         await simple_middleware.run_pre_processing(handler)
         mock_rules.assert_awaited()
-
-
-async def test_apply_pre_flight_headers_disabled() -> None:
-    config = SecurityConfig(
-        geo_ip_handler=None,
-        enable_redis=False,
-        enable_penetration_detection=False,
-        security_headers=None,
-    )
-    middleware = SecurityMiddleware(config=config)
-    fake = _FakeHandler(
-        request=SimpleNamespace(
-            method="GET",
-            path="/test",
-            protocol="http",
-            remote_ip="10.0.0.1",
-            headers=tornado.httputil.HTTPHeaders(),
-            body=b"",
-            query_arguments={},
-            full_url=lambda: "http://localhost/test",
-        ),
-        application=SimpleNamespace(settings={}),
-    )
-    handler = cast(RequestHandler, fake)
-    await middleware.apply_pre_flight_headers(handler)
-    assert fake._headers_store == {}
-    await middleware.reset()
-
-
-async def test_apply_pre_flight_headers_with_cors_origin(
-    simple_middleware: SecurityMiddleware,
-) -> None:
-    simple_middleware.config.enable_cors = True
-    simple_middleware.config.cors_allow_origins = ["https://example.com"]
-    handler = _make_handler(headers={"Origin": "https://example.com"})
-    await simple_middleware.apply_pre_flight_headers(handler)
 
 
 async def test_run_post_processing_without_request(

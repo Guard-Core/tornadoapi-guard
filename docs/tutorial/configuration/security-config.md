@@ -233,7 +233,7 @@ Sub-field reference:
 | `permissions_policy` | str | `"geolocation=(), microphone=(), camera=()"` | `Permissions-Policy` |
 | `custom` | dict[str, str] \| None | None | Additional custom headers applied to every response |
 
-Headers are applied automatically by `SecurityHandler.prepare()` via `SecurityMiddleware.apply_pre_flight_headers()` — no extra wiring required.
+Headers are applied automatically by the engine response pass in `SecurityHandler.finish()` - no extra wiring required.
 
 ___
 

@@ -61,7 +61,7 @@ Architecture Overview
 The example is built around three objects that every TornadoAPI Guard application needs:
 
 - **`SecurityMiddleware`** — holds the security pipeline, the metrics collector, and the event bus. Instantiated once at module level and then `await security_middleware.initialize()` is called in `main()` before the server starts.
-- **`SecurityHandler`** — base class that every route inherits from (directly or via a small project-specific subclass like the `JSONHandler` in the example). `SecurityHandler.prepare()` runs the full security pipeline before the handler method, and `SecurityHandler.on_finish()` runs post-processing hooks.
+- **`SecurityHandler`** - base class that every route inherits from (directly or via a small project-specific subclass like the `JSONHandler` in the example). `SecurityHandler.prepare()` runs the full security pipeline before the handler method, and `SecurityHandler.finish()` runs the response pass (metrics, return rules, headers, modifier) before the response is flushed.
 - **`SecurityDecorator`** — route-level decorator set. Instantiated once at module level and registered with the middleware via `security_middleware.set_decorator_handler(guard_decorator)`. Applied to handler methods (`get`, `post`, `put`, ...), never to the class.
 
 The example also defines a project-specific `JSONHandler(SecurityHandler)` subclass that adds `write_json` / `write_error` helpers — a useful pattern for any production app.
