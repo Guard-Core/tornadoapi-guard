@@ -10,6 +10,42 @@ Release Notes
 
 ___
 
+v2.0.0 (2026-10-15)
+-------------------
+
+Engine routing parity with fastapi-guard, response pass before the flush (v2.0.0)
+---------------------------------------------------------------------------------
+
+### Breaking changes
+
+- **`SecurityMiddleware.apply_pre_flight_headers` is removed** (#39, closes #38). It was the reimplemented path that set security and CORS headers before the handler ran. Security headers, CORS and return-rule effects are now applied by the engine response pass in `SecurityHandler.finish()`, and blocked responses carry CORS only, like fastapi-guard.
+- **Upgrade action** - Delete any call to `middleware.apply_pre_flight_headers(...)` from your own handlers or subclasses. Subclass `SecurityHandler` and nothing else is needed.
+- **The `guard-core` floor moves from `>=4.0.0` to `>=4.4.0`**, which carries the engine APIs this adapter now uses (first shipped in 4.1.0) and the guard-core 4.4.0 detection and dynamic rule fixes.
+- **A request with no client address is now answered with `403`** under the default `fail_secure=True`. It used to pass through. Set `fail_secure=False` to keep the old behavior.
+
+### Fixed
+
+- **The engine response pass now runs in `finish()` before the flush** instead of in `on_finish` after the response was sent. `custom_response_modifier`, the security headers, CORS and return-rule effects now reach the client, and body-based return rules see the buffered body. Streamed responses that call `flush()` before `finish()` already have their headers on the wire, so the pass observes them (metrics, return rules over the buffered body) but cannot change them.
+- **Passthrough and the route all-checks bypass go through the engine `BypassHandler`.** Excluded paths are scoped, so bans and IP rules still apply to them, and a bypassed route calls the real handler method with the modifier applied.
+- **Blocked, preflight and bypass responses no longer emit request metrics** and skip the response pass. Excluded paths still reach it.
+- **Global behavioral return rules now run.**
+- **A Redis failure during initialization now returns `503` with `Retry-After`**.
+
+### Documentation and tests
+
+- The handler, middleware and adapter docs, the tutorial pages, the agent guidance and the package skill describe the new flow.
+- `tests/test_engine_parity.py` runs a real Tornado server and client against the real engine handlers. The tests that asserted the old bypass behavior and the removed pre-flight headers were replaced.
+
+### Compatibility
+
+- The `>=4.4.0` floor means upgrading tornadoapi-guard also brings the guard-core 4.4.0 detection and dynamic rule fixes (Cookie header scanned per pair, the per-request scan budget, the semantic-only header opt-out and dynamic rule versions applied over the base config).
+
+### Chore
+
+- The sponsor button points at the maintainer's Sponsors page, the mkdocs `site_url` drops `/latest/` so canonical URLs resolve, the README markdown lint errors that blocked the docs deploy are fixed and the README was brought to content parity, a CODEOWNERS file was added, the family Discord relay workflow was added, and the `upload-sarif` action was bumped (#29, #30, #31, #32, #34, #36, #37).
+
+___
+
 v1.2.1 (2026-10-08)
 -------------------
 
