@@ -20,7 +20,6 @@ Engine routing parity with fastapi-guard, response pass before the flush (v2.0.0
 
 - **`SecurityMiddleware.apply_pre_flight_headers` is removed** (#39, closes #38). It was the reimplemented path that set security and CORS headers before the handler ran. Security headers, CORS and return-rule effects are now applied by the engine response pass in `SecurityHandler.finish()`, and blocked responses carry CORS only, like fastapi-guard.
 - **Upgrade action** - Delete any call to `middleware.apply_pre_flight_headers(...)` from your own handlers or subclasses. Subclass `SecurityHandler` and nothing else is needed.
-- **`SecurityHandler.finish()` returns a future.** It returns an awaitable like Tornado's own `finish()`, so `await self.finish()` and a bare `self.finish()` both work, and a second call returns the same pending future.
 - **The `guard-core` floor moves from `>=4.0.0` to `>=4.1.0`**, the first release with the engine APIs this adapter now uses.
 - **A request with no client address is now answered with `403`** under the default `fail_secure=True`. It used to pass through. Set `fail_secure=False` to keep the old behavior.
 
