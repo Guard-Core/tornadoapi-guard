@@ -3468,7 +3468,7 @@
 </tr>
 </tbody>
 </table>
-<p>Headers are applied automatically by <code>SecurityHandler.prepare()</code> via <code>SecurityMiddleware.apply_pre_flight_headers()</code> — no extra wiring required.</p>
+<p>Headers are applied automatically by the engine response pass in <code>SecurityHandler.finish()</code> - no extra wiring required.</p>
 <hr />
 <h2 id="cors-settings">CORS Settings<a class="headerlink" href="#cors-settings" title="Permanent link">&para;</a></h2>
 <table>

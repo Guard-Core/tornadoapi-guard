@@ -1948,10 +1948,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lifecycle-hook-on_finish" class="md-nav__link">
+  <a href="#response-pass-finish" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Lifecycle Hook: on_finish
+        Response Pass: finish
       
     </span>
   </a>
@@ -2543,10 +2543,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lifecycle-hook-on_finish" class="md-nav__link">
+  <a href="#response-pass-finish" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Lifecycle Hook: on_finish
+        Response Pass: finish
       
     </span>
   </a>
@@ -2643,7 +2643,7 @@
 <p>The <code>SecurityHandler</code> class is the Tornado-specific base class that every handler inherits from in order to participate in the <code>tornadoapi-guard</code> security pipeline.</p>
 <div class="admonition info">
 <p class="admonition-title">Why a base handler instead of middleware?</p>
-<p>Tornado does not have an application-level middleware chain like ASGI frameworks (FastAPI, Starlette). There is no <code>app.add_middleware(...)</code> equivalent. Instead, Tornado exposes pre-/post-processing hooks on <code>tornado.web.RequestHandler</code> (<code>prepare</code>, <code>on_finish</code>). <code>tornadoapi-guard</code> plugs into these hooks through a base class: subclassing <code>SecurityHandler</code> is what "attaches" the security pipeline to a route.</p>
+<p>Tornado does not have an application-level middleware chain like ASGI frameworks (FastAPI, Starlette). There is no <code>app.add_middleware(...)</code> equivalent. Instead, Tornado exposes hooks on <code>tornado.web.RequestHandler</code> (<code>prepare</code>, <code>finish</code>). <code>tornadoapi-guard</code> plugs into these hooks through a base class: subclassing <code>SecurityHandler</code> is what "attaches" the security pipeline to a route.</p>
 </div>
 <hr />
 <h2 id="class-signature">Class Signature<a class="headerlink" href="#class-signature" title="Permanent link">&para;</a></h2>
@@ -2652,7 +2652,7 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">SecurityHandler</span><span class="p">(</span><span class="n">RequestHandler</span><span class="p">):</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Future</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span> <span class="o">...</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_security_middleware</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SecurityMiddleware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 </span></code></pre></div>
 <p>Subclass <code>SecurityHandler</code> for every handler that needs security checks. Handlers that should run outside the pipeline (for example, a public <code>/health</code> endpoint) can keep inheriting from <code>tornado.web.RequestHandler</code> directly, or can be added to <code>SecurityConfig.exclude_paths</code>.</p>
@@ -2663,36 +2663,29 @@
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">if</span> <span class="n">middleware</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="k">return</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="k">await</span> <span class="n">middleware</span><span class="o">.</span><span class="n">apply_pre_flight_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">blocking</span> <span class="o">=</span> <span class="k">await</span> <span class="n">middleware</span><span class="o">.</span><span class="n">run_pre_processing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="k">if</span> <span class="n">blocking</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="n">apply_guard_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blocking</span><span class="p">)</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="k">return</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">early</span> <span class="o">=</span> <span class="k">await</span> <span class="n">middleware</span><span class="o">.</span><span class="n">run_pre_processing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">if</span> <span class="n">early</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="n">apply_guard_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">early</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>prepare()</code> runs <strong>before</strong> the HTTP method (<code>get</code>, <code>post</code>, etc.) is dispatched. <code>SecurityHandler</code> overrides it to:</p>
 <ol>
 <li>Look up the middleware via <code>self.application.settings["security_middleware"]</code>.</li>
-<li>Call <code>middleware.apply_pre_flight_headers(self)</code> to set security and CORS headers on the response (so headers are present even if the handler later writes an error or short-circuits).</li>
-<li>Call <code>middleware.run_pre_processing(self)</code> to execute the 17-check security pipeline (route config, emergency mode, HTTPS enforcement, request logging, request size/content, required headers, authentication, referrer, custom validators, time window, cloud IP refresh, IP security, cloud provider, user agent, rate limit, suspicious activity, and custom request check).</li>
-<li>If the pipeline returns a blocking response, <code>apply_guard_response()</code> writes the status, headers, and body back through the handler (via <code>clear</code>, <code>set_status</code>, <code>set_header</code>, <code>write</code>, <code>finish</code>). The actual HTTP method is <strong>not</strong> invoked.</li>
+<li>Call <code>middleware.run_pre_processing(self)</code>, which mirrors fastapi-guard's <code>dispatch</code>: the CORS preflight, the engine passthrough handling (excluded paths stay scoped so the checks that apply to them still run, and a request with no client address gets the <code>fail_secure</code> 403), the route all-checks bypass (the real handler method is called and the response modifier applied), and the 17-check security pipeline (route config, emergency mode, HTTPS enforcement, request logging, request size/content, required headers, authentication, referrer, custom validators, time window, cloud IP refresh, IP security, cloud provider, user agent, rate limit, suspicious activity, and custom request check).</li>
+<li>If any of those produces a response (blocked, preflight, bypass, or the Redis-unavailable 503), <code>apply_guard_response()</code> writes the status, headers, and body back through the handler (via <code>clear</code>, <code>set_status</code>, <code>set_header</code>, <code>write</code>, <code>finish</code>) with the CORS headers attached. The actual HTTP method is <strong>not</strong> invoked again, and this response does not go through the response pass below, so it emits no request metrics.</li>
 </ol>
 <p>Because <code>prepare()</code> is <code>async</code>, the pipeline can perform async work (Redis lookups, IPInfo API calls, agent event publishing) without blocking the Tornado IOLoop.</p>
 <hr />
-<h2 id="lifecycle-hook-on_finish">Lifecycle Hook: <code>on_finish</code><a class="headerlink" href="#lifecycle-hook-on_finish" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">middleware</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_security_middleware</span><span class="p">()</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">if</span> <span class="n">middleware</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="k">return</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">middleware</span><span class="o">.</span><span class="n">run_post_processing</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+<h2 id="response-pass-finish">Response Pass: <code>finish</code><a class="headerlink" href="#response-pass-finish" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Future</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="o">...</span>
 </span></code></pre></div>
-<p><code>on_finish()</code> runs <strong>after</strong> the response has been sent to the client. <code>SecurityHandler</code> overrides it to schedule <code>middleware.run_post_processing(self)</code> via <code>asyncio.create_task</code>. Post-processing includes:</p>
+<p>When the request proceeds to your handler method, <code>SecurityHandler</code> overrides <code>finish()</code> so the engine response pass runs on the outgoing response <strong>before it is flushed</strong>, exactly like fastapi-guard's <code>_process_response</code>. <code>finish()</code> returns a future (like Tornado's own), so <code>await self.finish()</code> and a bare <code>self.finish()</code> both work, and a second call (for example Tornado's auto-finish) returns the same pending future. The pass:</p>
 <ul>
-<li>Behavioral return-rule processing (for example, "ban after N <code>404</code> responses in 60 s").</li>
-<li>Metrics emission (response time, status code, route).</li>
-<li>Event publishing to the Guard Agent (if configured).</li>
+<li>Processes route and global behavioral return rules, including body-based patterns, because the buffered body is visible before the flush.</li>
+<li>Collects request metrics (response time, status code).</li>
+<li>Applies the security headers, the CORS headers, and <code>custom_response_modifier</code>. Header, status and body changes made by the modifier reach the client.</li>
 </ul>
-<p>Running post-processing as a fire-and-forget task keeps the response path fast: the client sees the response as soon as the handler finishes, and book-keeping happens in the background.</p>
+<p>If the handler already flushed part of the response (<code>flush()</code> before <code>finish()</code>), the headers are on the wire, so the pass still observes the response (metrics and return rules over what is buffered) but cannot change what was sent. If the pass itself raises, the error is logged and the response is finished unmodified.</p>
 <hr />
 <h2 id="internal-lookup-_get_security_middleware">Internal Lookup: <code>_get_security_middleware</code><a class="headerlink" href="#internal-lookup-_get_security_middleware" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_get_security_middleware</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SecurityMiddleware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -2701,7 +2694,7 @@
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="k">return</span> <span class="n">value</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">return</span> <span class="kc">None</span>
 </span></code></pre></div>
-<p>Internal lookup. Returns the <code>SecurityMiddleware</code> instance stored in <code>application.settings["security_middleware"]</code>, or <code>None</code> if no middleware is configured. When <code>None</code> is returned, both <code>prepare()</code> and <code>on_finish()</code> short-circuit — see <a href="#degraded-mode">Degraded mode</a> below.</p>
+<p>Internal lookup. Returns the <code>SecurityMiddleware</code> instance stored in <code>application.settings["security_middleware"]</code>, or <code>None</code> if no middleware is configured. When <code>None</code> is returned, both <code>prepare()</code> and <code>finish()</code> short-circuit - see <a href="#degraded-mode">Degraded mode</a> below.</p>
 <hr />
 <h2 id="registration">Registration<a class="headerlink" href="#registration" title="Permanent link">&para;</a></h2>
 <p>The <code>SecurityMiddleware</code> instance is attached to the Tornado <code>Application</code> via a settings entry named <code>security_middleware</code>. <code>SecurityHandler</code> looks it up from there on every request.</p>
@@ -2762,18 +2755,14 @@
 <p>The example application in <code>examples/simple_app/main.py</code> ships with an <code>EchoWebSocketHandler</code> that demonstrates this pattern.</p>
 <hr />
 <h2 id="interaction-with-set_default_headers">Interaction with <code>set_default_headers</code><a class="headerlink" href="#interaction-with-set_default_headers" title="Permanent link">&para;</a></h2>
-<p><code>tornadoapi-guard</code> does <strong>not</strong> override <code>set_default_headers</code> on <code>SecurityHandler</code>. Security headers are applied in <code>prepare()</code> via <code>apply_pre_flight_headers</code> instead, for one reason: the <code>SecurityHeadersManager.get_headers()</code> method is asynchronous (it may read configuration from Redis), and Tornado's <code>set_default_headers</code> is <strong>synchronous</strong>. An async operation cannot complete inside a sync hook.</p>
-<p>This has two practical consequences:</p>
-<ol>
-<li>You are free to override <code>set_default_headers</code> on your own handlers to add static headers (for example, <code>X-Service-Name</code>). The headers you set there are applied first, and <code>apply_pre_flight_headers</code> then adds (or overrides) the guard-managed security and CORS headers on top.</li>
-<li>The guard-managed headers are attached even when the pipeline returns a blocking response, because <code>apply_pre_flight_headers</code> runs <strong>before</strong> <code>run_pre_processing</code>. A client that is rate-limited will still receive the correct <code>Content-Security-Policy</code>, <code>X-Frame-Options</code>, and CORS headers on the <code>429</code> response.</li>
-</ol>
+<p><code>tornadoapi-guard</code> does <strong>not</strong> override <code>set_default_headers</code> on <code>SecurityHandler</code>. Security headers are applied by the engine response pass in <code>finish()</code>, because the <code>SecurityHeadersManager.get_headers()</code> method is asynchronous (it may read configuration from Redis) and Tornado's <code>set_default_headers</code> is <strong>synchronous</strong>.</p>
+<p>You are free to override <code>set_default_headers</code> on your own handlers to add static headers (for example, <code>X-Service-Name</code>). The headers you set there are applied first, and the response pass then adds (or overrides) the guard-managed security and CORS headers on top. Like fastapi-guard, responses produced by the pipeline itself (a <code>429</code> for a rate-limited client, for example) carry the CORS headers but not the security headers, which are only added to responses that came out of your handler.</p>
 <hr />
 <h2 id="degraded-mode">Degraded Mode<a class="headerlink" href="#degraded-mode" title="Permanent link">&para;</a></h2>
 <p>If a handler inherits from <code>SecurityHandler</code> but the <code>Application</code> does <strong>not</strong> have a <code>security_middleware</code> entry in its settings (for example, in a unit test, a minimal sandbox, or during local development without the full middleware stack), <code>_get_security_middleware()</code> returns <code>None</code> and both hooks short-circuit:</p>
 <ul>
 <li><code>prepare()</code> returns immediately — no headers are injected, no pipeline runs.</li>
-<li><code>on_finish()</code> returns immediately — no post-processing is scheduled.</li>
+<li><code>finish()</code> finishes the response immediately - no response pass runs.</li>
 </ul>
 <p>In this degraded state <code>SecurityHandler</code> behaves exactly like a plain <code>tornado.web.RequestHandler</code>. This is intentional: it lets you write test fixtures that instantiate handlers without having to stand up a full <code>SecurityMiddleware</code> and its Redis/agent dependencies. Just remember that <strong>no security checks are being performed</strong> when the middleware is absent.</p>
 <hr />

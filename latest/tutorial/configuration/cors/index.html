@@ -2610,7 +2610,7 @@
 
 
 <h1 id="cors-configuration">CORS Configuration<a class="headerlink" href="#cors-configuration" title="Permanent link">&para;</a></h1>
-<p>TornadoAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration through the <code>SecurityConfig</code> model. Unlike frameworks that ship with a standalone CORS middleware, the Tornado adapter applies CORS headers directly from the handler pipeline: whenever a request carries an <code>Origin</code> header and <code>enable_cors=True</code> is set on the config, <code>SecurityHandler.apply_pre_flight_headers()</code> calls <code>security_headers_manager.get_cors_headers(origin)</code> and writes the resulting headers onto the response.</p>
+<p>TornadoAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration through the <code>SecurityConfig</code> model. Unlike frameworks that ship with a standalone CORS middleware, the Tornado adapter applies CORS headers directly from the handler pipeline: whenever <code>enable_cors=True</code> is set on the config, the CORS preflight is answered from <code>SecurityHandler.prepare()</code>, and the engine response pass in <code>SecurityHandler.finish()</code> writes the CORS headers onto the response (blocked responses carry them too).</p>
 <p>The generated headers include:</p>
 <ul>
 <li><code>Access-Control-Allow-Origin</code></li>

@@ -2632,7 +2632,7 @@
 <h1 id="first-steps">First Steps<a class="headerlink" href="#first-steps" title="Permanent link">&para;</a></h1>
 <p>Let's start with a simple example that shows how to add TornadoAPI Guard to your application.</p>
 <h2 id="create-a-tornado-application">Create a Tornado application<a class="headerlink" href="#create-a-tornado-application" title="Permanent link">&para;</a></h2>
-<p>First, create a new Tornado application. TornadoAPI Guard integrates via two objects: the <code>SecurityMiddleware</code> (which holds the security pipeline) and the <code>SecurityHandler</code> base class (which wires the pipeline into Tornado's <code>prepare</code>/<code>on_finish</code> hooks). Every handler that should be protected must inherit from <code>SecurityHandler</code>.</p>
+<p>First, create a new Tornado application. TornadoAPI Guard integrates via two objects: the <code>SecurityMiddleware</code> (which holds the security pipeline) and the <code>SecurityHandler</code> base class (which wires the pipeline into Tornado's <code>prepare</code>/<code>finish</code> hooks). Every handler that should be protected must inherit from <code>SecurityHandler</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">tornado.web</span>
@@ -2679,7 +2679,7 @@
 </span></code></pre></div>
 <hr />
 <h2 id="inherit-from-securityhandler">Inherit from SecurityHandler<a class="headerlink" href="#inherit-from-securityhandler" title="Permanent link">&para;</a></h2>
-<p>Every request handler that should be protected must subclass <code>SecurityHandler</code>. The base class overrides <code>prepare()</code> to run the full security pipeline (IP checks, rate limiting, penetration detection, etc.) before your method runs, and overrides <code>on_finish()</code> to run post-processing hooks (metrics, behavioral return rules, logging). If you inherit from <code>tornado.web.RequestHandler</code> directly, no security checks will run for that route.</p>
+<p>Every request handler that should be protected must subclass <code>SecurityHandler</code>. The base class overrides <code>prepare()</code> to run the full security pipeline (IP checks, rate limiting, penetration detection, etc.) before your method runs, and overrides <code>finish()</code> to run the response pass (metrics, behavioral return rules, security headers, CORS and your <code>custom_response_modifier</code>) before the response is flushed. If you inherit from <code>tornado.web.RequestHandler</code> directly, no security checks will run for that route.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tornadoapi_guard</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityHandler</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>

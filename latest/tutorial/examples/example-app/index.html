@@ -3151,7 +3151,7 @@
 <p>The example is built around three objects that every TornadoAPI Guard application needs:</p>
 <ul>
 <li><strong><code>SecurityMiddleware</code></strong> — holds the security pipeline, the metrics collector, and the event bus. Instantiated once at module level and then <code>await security_middleware.initialize()</code> is called in <code>main()</code> before the server starts.</li>
-<li><strong><code>SecurityHandler</code></strong> — base class that every route inherits from (directly or via a small project-specific subclass like the <code>JSONHandler</code> in the example). <code>SecurityHandler.prepare()</code> runs the full security pipeline before the handler method, and <code>SecurityHandler.on_finish()</code> runs post-processing hooks.</li>
+<li><strong><code>SecurityHandler</code></strong> - base class that every route inherits from (directly or via a small project-specific subclass like the <code>JSONHandler</code> in the example). <code>SecurityHandler.prepare()</code> runs the full security pipeline before the handler method, and <code>SecurityHandler.finish()</code> runs the response pass (metrics, return rules, headers, modifier) before the response is flushed.</li>
 <li><strong><code>SecurityDecorator</code></strong> — route-level decorator set. Instantiated once at module level and registered with the middleware via <code>security_middleware.set_decorator_handler(guard_decorator)</code>. Applied to handler methods (<code>get</code>, <code>post</code>, <code>put</code>, ...), never to the class.</li>
 </ul>
 <p>The example also defines a project-specific <code>JSONHandler(SecurityHandler)</code> subclass that adds <code>write_json</code> / <code>write_error</code> helpers — a useful pattern for any production app.</p>

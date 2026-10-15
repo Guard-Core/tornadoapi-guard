@@ -2839,7 +2839,7 @@
 <li><code>handler._headers</code> (Tornado's internal <code>HTTPHeaders</code> container) for the accumulated response headers.</li>
 <li><code>handler._write_buffer</code> for the accumulated response body.</li>
 </ul>
-<p>Used by <code>SecurityMiddleware.run_post_processing</code> to build a response object from a handler that has already written its reply, so that behavioral return rules and metrics collectors can see the actual status / headers / body that went on the wire.</p>
+<p>Used by <code>SecurityMiddleware.run_post_processing</code> to build a response object from a handler that has already written its reply, so that behavioral return rules and metrics collectors can see the actual status / headers / body before they are flushed to the client. <code>SecurityHandler.finish()</code> runs the response pass at that point, so any change the pass makes (security headers, CORS headers, <code>custom_response_modifier</code>) is written back onto the handler and reaches the client.</p>
 <hr />
 <h2 id="tornadoresponsefactory">TornadoResponseFactory<a class="headerlink" href="#tornadoresponsefactory" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TornadoResponseFactory</span><span class="p">:</span>
@@ -2882,7 +2882,7 @@
 <p><code>SecurityConfig</code> accepts two user-provided callables:</p>
 <ul>
 <li><code>custom_request_check(request)</code> — runs at the end of the security pipeline. Return a <code>GuardResponse</code> to short-circuit the request, or <code>None</code> to let it through.</li>
-<li><code>custom_response_modifier(response)</code> — runs during post-processing. Receives the built response and may mutate its headers (or construct a new response) before the middleware hands it back.</li>
+<li><code>custom_response_modifier(response)</code> - runs during the response pass in <code>SecurityHandler.finish()</code>, before the response is flushed. Receives the response built from the handler (and the pipeline's own blocking responses) and may mutate its headers (or construct a new response); the status, header and body changes reach the client.</li>
 </ul>
 <p>Use <code>TornadoGuardResponse</code> for return values so that <code>SecurityMiddleware</code> can apply headers, CORS, and the custom modifier uniformly. The pattern below mirrors <code>examples/simple_app/main.py</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2924,7 +2924,7 @@
 </ul>
 <hr />
 <h2 id="per-handler-state">Per-handler State<a class="headerlink" href="#per-handler-state" title="Permanent link">&para;</a></h2>
-<p><code>TornadoGuardRequest.state</code> returns a <code>SimpleNamespace</code> that the middleware uses to stash per-request data: the guard request itself, the resolved route config, the extracted client IP, and the request start time. Behavioral hooks, post-processing, and custom validators read from this namespace.</p>
+<p><code>TornadoGuardRequest.state</code> returns a <code>SimpleNamespace</code> that the middleware uses to stash per-request data: the guard request itself, the resolved route config, the extracted client IP, and the request start time. Behavioral hooks, the response pass, and custom validators read from this namespace.</p>
 <p>The storage is backed by a module-level <code>WeakKeyDictionary</code> keyed by the handler instance:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">_guard_state_store</span><span class="p">:</span> <span class="n">WeakKeyDictionary</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">SimpleNamespace</span><span class="p">]</span> <span class="o">=</span> <span class="n">WeakKeyDictionary</span><span class="p">()</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
