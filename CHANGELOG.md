@@ -13,7 +13,7 @@ Engine routing parity with fastapi-guard, response pass before the flush (v2.0.0
 
 - **`SecurityMiddleware.apply_pre_flight_headers` is removed** (#39, closes #38). It was the reimplemented path that set security and CORS headers before the handler ran. Security headers, CORS and return-rule effects are now applied by the engine response pass in `SecurityHandler.finish()`, and blocked responses carry CORS only, like fastapi-guard.
 - **Upgrade action** - Delete any call to `middleware.apply_pre_flight_headers(...)` from your own handlers or subclasses. Subclass `SecurityHandler` and nothing else is needed.
-- **The `guard-core` floor moves from `>=4.0.0` to `>=4.1.0`**, the first release with the engine APIs this adapter now uses.
+- **The `guard-core` floor moves from `>=4.0.0` to `>=4.4.0`**, which carries the engine APIs this adapter now uses (first shipped in 4.1.0) and the guard-core 4.4.0 detection and dynamic rule fixes.
 - **A request with no client address is now answered with `403`** under the default `fail_secure=True`. It used to pass through. Set `fail_secure=False` to keep the old behavior.
 
 ### Fixed
@@ -31,7 +31,7 @@ Engine routing parity with fastapi-guard, response pass before the flush (v2.0.0
 
 ### Compatibility
 
-- The detection and dynamic rule fixes in guard-core 4.4.0 reach this adapter by upgrading guard-core (for example `pip install -U guard-core`), with no change to this package.
+- The `>=4.4.0` floor means upgrading tornadoapi-guard also brings the guard-core 4.4.0 detection and dynamic rule fixes (Cookie header scanned per pair, the per-request scan budget, the semantic-only header opt-out and dynamic rule versions applied over the base config).
 
 ### Chore
 

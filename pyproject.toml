@@ -36,7 +36,7 @@ keywords = [
 ]
 dependencies = [
     "tornado",
-    "guard-core>=4.1.0",
+    "guard-core>=4.4.0",
 ]
 
 [project.urls]
