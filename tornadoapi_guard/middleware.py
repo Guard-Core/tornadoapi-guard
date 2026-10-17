@@ -195,6 +195,9 @@ class SecurityMiddleware:
             middleware=self,
         )
         self.behavioral_processor = BehavioralProcessor(behavioral_context)
+        self._global_throttle_rules = any(
+            rule.action == "throttle" for rule in self.config.global_behavior_rules
+        )
 
     @property
     def guard_response_factory(self) -> TornadoResponseFactory:
@@ -466,11 +469,22 @@ class SecurityMiddleware:
         if blocking is not None:
             return blocking
 
-        if route_config and route_config.behavior_rules and client_ip:
-            await self.behavioral_processor.process_usage_rules(
-                guard_request, client_ip, route_config
-            )
-        return None
+        return await self._process_behavioral_usage(
+            guard_request, client_ip, route_config
+        )
+
+    async def _process_behavioral_usage(
+        self,
+        guard_request: TornadoGuardRequest,
+        client_ip: str,
+        route_config: RouteConfig | None,
+    ) -> GuardResponse | None:
+        has_route_rules = route_config is not None and bool(route_config.behavior_rules)
+        if not client_ip or not (has_route_rules or self._global_throttle_rules):
+            return None
+        return await self.behavioral_processor.process_usage_rules(
+            guard_request, client_ip, route_config
+        )
 
     async def run_pre_processing(self, handler: RequestHandler) -> GuardResponse | None:
         guard_request = TornadoGuardRequest(handler)
