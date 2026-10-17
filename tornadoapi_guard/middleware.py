@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import time
-from collections.abc import Awaitable, Callable, Mapping
-from typing import TYPE_CHECKING, Any, cast
+from collections.abc import Awaitable, Callable, Mapping, Sequence
+from typing import Any, cast
 
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
@@ -23,6 +23,8 @@ from guard_core.handlers.security_headers_handler import security_headers_manage
 from guard_core.models import SecurityConfig
 from guard_core.protocols.response_protocol import GuardResponse
 from guard_core.utils import extract_client_ip, setup_custom_logging
+from tornado.httputil import HTTPHeaders, HTTPServerRequest
+from tornado.web import ErrorHandler, RequestHandler
 
 from tornadoapi_guard.adapters import (
     TornadoGuardRequest,
@@ -33,8 +35,13 @@ from tornadoapi_guard.adapters import (
     unwrap_response,
 )
 
-if TYPE_CHECKING:
-    from tornado.web import RequestHandler
+
+def _path_params(
+    args: Sequence[str], kwargs: Mapping[str, str]
+) -> tuple[tuple[str, str], ...]:
+    params = [(str(index), value) for index, value in enumerate(args)]
+    params += list(kwargs.items())
+    return tuple(sorted(params))
 
 
 class SecurityMiddleware:
@@ -85,6 +92,7 @@ class SecurityMiddleware:
                 )
 
         self.security_pipeline: SecurityCheckPipeline | None = None
+        self._routing_application: Any = None
 
         self._guard_response_factory = TornadoResponseFactory()
         self._cors_handler: CorsHandler | None = (
@@ -302,6 +310,7 @@ class SecurityMiddleware:
         if app_decorator:
             guard_request.state.guard_decorator = app_decorator
 
+        self._routing_application = handler.application
         method_name = (handler.request.method or "get").lower()
         endpoint = getattr(handler, method_name, None)
         if endpoint is None:
@@ -315,6 +324,43 @@ class SecurityMiddleware:
         qualname = getattr(endpoint, "__qualname__", None)
         if module and qualname:
             guard_request.state.guard_endpoint_id = f"{module}.{qualname}"
+
+        if getattr(self.security_pipeline, "needs_route_identity", False):
+            guard_request.state.guard_route_identity = (
+                (type(handler), method_name),
+                _path_params(handler.path_args, handler.path_kwargs),
+            )
+
+    def resolve_route(
+        self, path: str
+    ) -> tuple[tuple[tuple[type, str], tuple[tuple[str, str], ...]], ...]:
+        application = self._routing_application
+        if application is None:
+            return ()
+        request = HTTPServerRequest(
+            method="GET",
+            uri=path,
+            version="HTTP/1.1",
+            headers=HTTPHeaders({"Host": "localhost"}),
+            host="localhost",
+        )
+        delegate = application.find_handler(request)
+        handler_class = getattr(delegate, "handler_class", ErrorHandler)
+        if issubclass(handler_class, ErrorHandler):
+            return ()
+        params = _path_params(
+            [arg.decode("utf-8", "replace") for arg in delegate.path_args],
+            {
+                name: value.decode("utf-8", "replace")
+                for name, value in delegate.path_kwargs.items()
+            },
+        )
+        return tuple(
+            ((handler_class, method.lower()), params)
+            for method in handler_class.SUPPORTED_METHODS
+            if getattr(handler_class, method.lower())
+            is not getattr(RequestHandler, method.lower())
+        )
 
     def _inject_cors(
         self, response: GuardResponse, request_headers: Mapping[str, str]
