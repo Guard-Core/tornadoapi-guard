@@ -9,6 +9,7 @@ from typing import Any, cast
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
 from guard_core.core.checks.pipeline import SecurityCheckPipeline
+from guard_core.core.checks.route_prefixes import regex_route_prefix
 from guard_core.core.events import MetricsCollector, SecurityEventBus
 from guard_core.core.initialization import HandlerInitializer
 from guard_core.core.responses import ErrorResponseFactory, ResponseContext
@@ -42,6 +43,20 @@ def _path_params(
     params = [(str(index), value) for index, value in enumerate(args)]
     params += list(kwargs.items())
     return tuple(sorted(params))
+
+
+def _rule_prefixes(rules: Any) -> list[str]:
+    prefixes: list[str] = []
+    for rule in rules:
+        nested = getattr(rule.target, "rules", None)
+        regex = getattr(rule.matcher, "regex", None)
+        if nested is not None and regex is None:
+            prefixes.extend(_rule_prefixes(nested))
+        elif nested is None and regex is not None:
+            prefixes.append(regex_route_prefix(regex.pattern))
+        else:
+            prefixes.append("/")
+    return prefixes
 
 
 class SecurityMiddleware:
@@ -361,6 +376,12 @@ class SecurityMiddleware:
             if getattr(handler_class, method.lower())
             is not getattr(RequestHandler, method.lower())
         )
+
+    def static_route_prefixes(self) -> tuple[str, ...]:
+        application = self._routing_application
+        if application is None:
+            return ("/",)
+        return tuple(_rule_prefixes(application.default_router.rules))
 
     def _inject_cors(
         self, response: GuardResponse, request_headers: Mapping[str, str]
