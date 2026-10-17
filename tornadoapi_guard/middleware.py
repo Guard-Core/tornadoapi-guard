@@ -192,6 +192,7 @@ class SecurityMiddleware:
             event_bus=self.event_bus,
             guard_decorator=self.guard_decorator,
             behavior_tracker=self.handler_initializer.behavior_tracker,
+            middleware=self,
         )
         self.behavioral_processor = BehavioralProcessor(behavioral_context)
 
