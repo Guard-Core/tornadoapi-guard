@@ -160,9 +160,8 @@ For advanced use cases, you can access the rate limiter directly:
 from tornadoapi_guard import rate_limit_handler
 
 
-# Get the singleton instance
 async def some_route():
-    # Get a reference to the handler
+    # Get a reference to the handler (pass the config object the app was built with)
     handler = rate_limit_handler(config)
 
     # Reset rate limits (e.g., for a premium user)
@@ -188,7 +187,7 @@ async def reset_rate_limits_for_user(user_id: str):
 Implementation Details
 ----------------------
 
-The `RateLimitManager` is implemented as a singleton to ensure consistent state across requests. It uses:
+Managers built from the same config object share one state, which keeps the counts consistent across requests (a different config object has its own state). It uses:
 
 - TTLCache for in-memory storage with automatic expiration
 - Redis increments with TTL for distributed storage
