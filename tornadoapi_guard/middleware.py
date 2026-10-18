@@ -111,9 +111,7 @@ class SecurityMiddleware:
         self._routing_application: Any = None
 
         self._guard_response_factory = TornadoResponseFactory()
-        self._cors_handler: CorsHandler | None = (
-            CorsHandler(config) if config.enable_cors else None
-        )
+        self._cors_handler = CorsHandler(config)
 
         self.handler_initializer = HandlerInitializer(
             config=self.config,
@@ -282,7 +280,7 @@ class SecurityMiddleware:
             IpSecurityCheck(self),
             CloudProviderCheck(self),
             UserAgentCheck(self),
-            *([] if self.config.enable_cors else [CorsPreflightCheck(self)]),
+            CorsPreflightCheck(self),
             RateLimitCheck(self),
             SuspiciousActivityCheck(self),
             CustomRequestCheck(self),
@@ -394,7 +392,9 @@ class SecurityMiddleware:
     def _inject_cors(
         self, response: GuardResponse, request_headers: Mapping[str, str]
     ) -> None:
-        if self._cors_handler is None:
+        if not self.config.enable_cors and "origin" not in {
+            key.lower() for key in request_headers
+        }:
             return
         cors_headers = self._cors_handler.build_response_headers(dict(request_headers))
         for key, value in cors_headers.items():
@@ -422,7 +422,7 @@ class SecurityMiddleware:
     async def _handle_preflight(
         self, guard_request: TornadoGuardRequest
     ) -> GuardResponse | None:
-        if self._cors_handler is None:
+        if not self.config.enable_cors:
             return None
         headers = dict(guard_request.headers)
         if not is_preflight(guard_request.method, headers):

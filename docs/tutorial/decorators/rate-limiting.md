@@ -173,12 +173,12 @@ Apply different rate limits based on user's geographic location:
 class RateGeoHandler(SecurityHandler):
     @guard_deco.geo_rate_limit(
         {
-            "US": (100, 3600),    # 100 requests/hour for US
-            "CA": (100, 3600),    # 100 requests/hour for Canada
-            "GB": (80, 3600),     # 80 requests/hour for UK
-            "DE": (80, 3600),     # 80 requests/hour for Germany
-            "CN": (10, 3600),     # 10 requests/hour for China
-            "*": (50, 3600),      # 50 requests/hour for others
+            "US": (100, 3600),  # 100 requests/hour for US
+            "CA": (100, 3600),  # 100 requests/hour for Canada
+            "GB": (80, 3600),  # 80 requests/hour for UK
+            "DE": (80, 3600),  # 80 requests/hour for Germany
+            "CN": (10, 3600),  # 10 requests/hour for China
+            "*": (50, 3600),  # 50 requests/hour for others
         }
     )
     async def get(self) -> None:
@@ -222,10 +222,10 @@ class PremiumGeoHandler(SecurityHandler):
 class SupportGeoHandler(SecurityHandler):
     @guard_deco.geo_rate_limit(
         {
-            "US": (50, 3600),     # US business hours
-            "EU": (40, 3600),     # European business hours
-            "APAC": (30, 3600),   # Asia-Pacific business hours
-            "*": (20, 3600),      # Outside business regions
+            "US": (50, 3600),  # US business hours
+            "EU": (40, 3600),  # European business hours
+            "APAC": (30, 3600),  # Asia-Pacific business hours
+            "*": (20, 3600),  # Outside business regions
         }
     )
     async def get(self) -> None:
@@ -357,8 +357,8 @@ Stack rate limiting with other security measures:
 
 ```python
 class AdminActionHandler(SecurityHandler):
-    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])     # Internal network only
-    @guard_deco.rate_limit(requests=20, window=3600)     # 20 actions per hour
+    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Internal network only
+    @guard_deco.rate_limit(requests=20, window=3600)  # 20 actions per hour
     async def post(self) -> None:
         self.write({"status": "admin action completed"})
 ```
@@ -379,8 +379,8 @@ class UserProfileHandler(SecurityHandler):
 
 ```python
 class GameActionHandler(SecurityHandler):
-    @guard_deco.rate_limit(requests=100, window=3600)      # 100 actions per hour
-    @guard_deco.usage_monitor(max_calls=50, window=300)    # Monitor for burst usage
+    @guard_deco.rate_limit(requests=100, window=3600)  # 100 actions per hour
+    @guard_deco.usage_monitor(max_calls=50, window=300)  # Monitor for burst usage
     async def post(self) -> None:
         self.write({"result": "game action completed"})
 ```
@@ -481,7 +481,7 @@ Track rate limiting effectiveness:
 ```python
 # Enable detailed logging for rate limiting analysis
 config = SecurityConfig(
-    log_request_level="INFO",       # Log all requests
+    log_request_level="INFO",  # Log all requests
     log_suspicious_level="WARNING",  # Log rate limit violations
 )
 

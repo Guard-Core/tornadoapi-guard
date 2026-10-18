@@ -60,8 +60,7 @@ Response Pass: `finish`
 -----------------------
 
 ```python
-def finish(self, chunk=None) -> Future[None]:
-    ...
+def finish(self, chunk=None) -> Future[None]: ...
 ```
 
 When the request proceeds to your handler method, `SecurityHandler` overrides `finish()` so the engine response pass runs on the outgoing response **before it is flushed**, exactly like fastapi-guard's `_process_response`. `finish()` returns a future (like Tornado's own), so `await self.finish()` and a bare `self.finish()` both work, and a second call (for example Tornado's auto-finish) returns the same pending future. The pass:

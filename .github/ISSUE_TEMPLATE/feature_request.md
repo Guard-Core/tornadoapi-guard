@@ -39,9 +39,7 @@ import tornado.web
 from tornadoapi_guard import SecurityConfig
 
 # Your feature example here
-security_config = SecurityConfig(
-    new_feature=SomeConfiguration(...)
-)
+security_config = SecurityConfig(new_feature=SomeConfiguration(...))
 ```
 
 ___

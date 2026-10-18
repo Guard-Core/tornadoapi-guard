@@ -386,9 +386,7 @@ class RequestValidator:
 
     def is_trusted_proxy(self, client_ip: str) -> bool: ...
 
-    async def check_time_window(
-        self, time_restrictions: dict[str, str]
-    ) -> bool: ...
+    async def check_time_window(self, time_restrictions: dict[str, str]) -> bool: ...
 
     def is_path_excluded(self, path: str) -> bool: ...
 ```
@@ -541,9 +539,7 @@ class MyCustomCheck(SecurityCheck):
 
         if condition_fails:
             self.logger.warning(f"Check failed for {client_ip}")
-            return await self.create_error_response(
-                403, "Custom check failed"
-            )
+            return await self.create_error_response(403, "Custom check failed")
 
         return None
 ```
@@ -554,6 +550,7 @@ class MyCustomCheck(SecurityCheck):
 
 ```python
 from guard_core.core.checks.implementations.my_custom_check import MyCustomCheck
+
 
 def _build_security_pipeline(self) -> None:
     checks = [
@@ -582,6 +579,7 @@ __all__ = [
 import pytest
 from guard_core.core.checks.implementations.my_custom_check import MyCustomCheck
 
+
 @pytest.mark.asyncio
 async def test_my_custom_check(test_middleware, test_request):
     check = MyCustomCheck(test_middleware)
@@ -600,6 +598,7 @@ Each module is independently testable:
 # Test a specific check
 from guard_core.core.checks.implementations import IpSecurityCheck
 
+
 async def test_ip_security():
     middleware = create_test_middleware()
     check = IpSecurityCheck(middleware)
@@ -613,6 +612,7 @@ async def test_ip_security():
 ```python
 # Test the pipeline
 from guard_core.core.checks import SecurityCheckPipeline
+
 
 async def test_pipeline():
     checks = [Check1(middleware), Check2(middleware)]

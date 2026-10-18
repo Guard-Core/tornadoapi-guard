@@ -29,9 +29,7 @@ Basic Configuration
 Enable cloud provider IP blocking:
 
 ```python
-config = SecurityConfig(
-    block_cloud_providers={"AWS", "GCP", "Azure"}
-)
+config = SecurityConfig(block_cloud_providers={"AWS", "GCP", "Azure"})
 ```
 
 ___

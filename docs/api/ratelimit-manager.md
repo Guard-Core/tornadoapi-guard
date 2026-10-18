@@ -40,7 +40,7 @@ config = SecurityConfig(
     rate_limit_window=60,
     enable_rate_limiting=True,
     enable_redis=True,
-    redis_url="redis://localhost:6379/0"
+    redis_url="redis://localhost:6379/0",
 )
 middleware = SecurityMiddleware(config=config)
 

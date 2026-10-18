@@ -19,23 +19,21 @@ setup_custom_logging
 ---------------------
 
 ```python
-def setup_custom_logging(
-    log_file: str | None = None
-) -> logging.Logger:
+def setup_custom_logging(log_file: str | None = None) -> logging.Logger:
     """
     Setup custom logging for TornadoAPI Guard.
-    
+
     Configures a hierarchical logger that outputs to both console and file.
     Console output is ALWAYS enabled for visibility.
     File output is optional for persistence.
-    
+
     Args:
         log_file: Optional path to log file. If None, only console output is enabled.
                   If provided, creates the directory if it doesn't exist.
-    
+
     Returns:
         logging.Logger: Configured logger with namespace "tornadoapi_guard"
-    
+
     Note: This function is synchronous (not async).
     """
 ```
@@ -78,10 +76,7 @@ is_user_agent_allowed
 ---------------------
 
 ```python
-async def is_user_agent_allowed(
-    user_agent: str,
-    config: SecurityConfig
-) -> bool:
+async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
     """
     Check if user agent is allowed.
     """
@@ -103,9 +98,7 @@ is_ip_allowed
 
 ```python
 async def is_ip_allowed(
-    ip: str,
-    config: SecurityConfig,
-    ipinfo_db: IPInfoManager | None = None
+    ip: str, config: SecurityConfig, ipinfo_db: IPInfoManager | None = None
 ) -> bool:
     """
     Check if IP address is allowed.
@@ -221,7 +214,7 @@ Usage Examples
 from guard_core.utils import (
     setup_custom_logging,
     log_activity,
-    detect_penetration_attempt
+    detect_penetration_attempt,
 )
 
 # Setup logging (synchronous function)
@@ -236,10 +229,7 @@ await log_activity(request, logger)
 
 # Log suspicious activity
 await log_activity(
-    request,
-    logger,
-    log_type="suspicious",
-    reason="Suspicious pattern detected"
+    request, logger, log_type="suspicious", reason="Suspicious pattern detected"
 )
 
 # Check for penetration attempts

@@ -115,6 +115,7 @@ Here's a complete example of a custom GeoIPHandler implementation that uses a di
 ```python
 from tornadoapi_guard import GeoIPHandler, RedisHandlerProtocol
 
+
 class CustomGeoIPHandler:
     """Custom handler using Custom GeoIP database"""
 
@@ -139,8 +140,11 @@ class CustomGeoIPHandler:
             cached_db = await self.redis.get_key("custom", "database")
             if cached_db:
                 with open(self.db_path, "wb") as f:
-                    f.write(cached_db if isinstance(cached_db, bytes)
-                            else cached_db.encode("latin-1"))
+                    f.write(
+                        cached_db
+                        if isinstance(cached_db, bytes)
+                        else cached_db.encode("latin-1")
+                    )
                 self.reader = somelibrary.Reader(self.db_path)
                 self._initialized = True
                 return
@@ -157,7 +161,9 @@ class CustomGeoIPHandler:
 
     async def initialize_redis(self, redis_handler: RedisHandlerProtocol) -> None:
         """Store Redis handler and initialize"""
-        self.redis = redis_handler  # Store the Redis handler provided by TornadoAPI Guard
+        self.redis = (
+            redis_handler  # Store the Redis handler provided by TornadoAPI Guard
+        )
         await self.initialize()
 
     def get_country(self, ip: str) -> str | None:

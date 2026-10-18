@@ -117,10 +117,7 @@ import asyncio
 import tornado.web
 from tornadoapi_guard import SecurityConfig, SecurityHandler, SecurityMiddleware
 
-config = SecurityConfig(
-    auto_ban_threshold=5,
-    auto_ban_duration=3600
-)
+config = SecurityConfig(auto_ban_threshold=5, auto_ban_duration=3600)
 middleware = SecurityMiddleware(config=config)
 
 

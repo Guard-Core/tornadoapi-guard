@@ -113,7 +113,6 @@ config = SecurityConfig(
     trusted_proxies=["10.0.0.1", "192.168.1.0/24"],  # Only trust specific IPs/ranges
     trusted_proxy_depth=1,  # Default proxy depth
     trust_x_forwarded_proto=True,  # Trust X-Forwarded-Proto from trusted proxies
-
     # Other config options...
 )
 ```

@@ -226,13 +226,13 @@ Stack multiple authentication decorators for comprehensive security:
 
 ```python
 class AuthCriticalAdminHandler(SecurityHandler):
-    @guard_deco.require_https()                          # Secure connection
-    @guard_deco.require_auth(type="bearer")              # Bearer token
+    @guard_deco.require_https()  # Secure connection
+    @guard_deco.require_auth(type="bearer")  # Bearer token
     @guard_deco.api_key_auth(header_name="X-Admin-Key")  # Admin API key
     @guard_deco.require_headers(
         {
-            "X-CSRF-Token": "required",                  # CSRF protection
-            "X-Request-ID": "required",                  # Request tracking
+            "X-CSRF-Token": "required",  # CSRF protection
+            "X-Request-ID": "required",  # Request tracking
         }
     )
     async def post(self) -> None:
@@ -432,7 +432,6 @@ Don't just check for presence, validate the content:
 ```python
 # The middleware handles presence validation
 @guard_deco.require_headers({"X-API-Key": "required"})
-
 
 # Your handler should validate the actual key value
 class ValidatedAPIKeyHandler(SecurityHandler):

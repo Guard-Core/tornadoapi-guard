@@ -237,7 +237,9 @@ class GameActionHandler(SecurityHandler):
 ```python
 class TradingHandler(SecurityHandler):
     @guard_deco.usage_monitor(max_calls=50, window=3600, action="ban")
-    @guard_deco.return_monitor("profit", max_occurrences=20, window=86400, action="alert")
+    @guard_deco.return_monitor(
+        "profit", max_occurrences=20, window=86400, action="alert"
+    )
     @guard_deco.suspicious_frequency(max_frequency=1.0, window=60, action="ban")
     async def post(self) -> None:
         self.write({"status": "executed", "result": "profit", "amount": 1000})

@@ -19,8 +19,7 @@ Class Definition
 
 ```python
 class SecurityMiddleware:
-    def __init__(self, *, config: SecurityConfig) -> None:
-        ...
+    def __init__(self, *, config: SecurityConfig) -> None: ...
 ```
 
 **Arguments:**
@@ -148,9 +147,7 @@ run_pre_processing
 ------------------
 
 ```python
-async def run_pre_processing(
-    self, handler: RequestHandler
-) -> GuardResponse | None:
+async def run_pre_processing(self, handler: RequestHandler) -> GuardResponse | None:
     """
     Run the engine request flow for an incoming request.
 

@@ -78,7 +78,9 @@ from tornadoapi_guard import CloudManager, cloud_handler
 from tornadoapi_guard import IPBanManager, ip_ban_manager
 from tornadoapi_guard import RateLimitManager, rate_limit_handler
 from tornadoapi_guard import RedisManager, redis_handler
-from tornadoapi_guard import sus_patterns_handler  # SusPatternsManager singleton instance
+from tornadoapi_guard import (
+    sus_patterns_handler,
+)  # SusPatternsManager singleton instance
 from tornadoapi_guard import BehaviorTracker, BehaviorRule
 
 # Special case - requires parameters

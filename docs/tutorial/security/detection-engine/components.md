@@ -105,8 +105,7 @@ Creates a timeout-protected matcher function:
 async def safe_matcher(content: str) -> dict[str, Any] | None:
     try:
         match = await asyncio.wait_for(
-            asyncio.to_thread(compiled_pattern.search, content),
-            timeout=self.timeout
+            asyncio.to_thread(compiled_pattern.search, content), timeout=self.timeout
         )
         return {"match": match} if match else None
     except asyncio.TimeoutError:
@@ -180,10 +179,10 @@ The analyzer detects:
         "sql_injection": 0.9,
         "xss": 0.3,
         "path_traversal": 0.0,
-        "command_injection": 0.0
+        "command_injection": 0.0,
     },
     "confidence": "high",  # low, medium, high
-    "detected_patterns": [...]
+    "detected_patterns": [...],
 }
 ```
 
@@ -234,7 +233,7 @@ Returns statistics for a specific pattern:
     "max_time": 0.125,
     "min_time": 0.001,
     "timeout_count": 2,
-    "match_count": 5
+    "match_count": 5,
 }
 ```
 
@@ -248,7 +247,7 @@ Identifies patterns exceeding the threshold:
         "pattern": "complex.*regex.*pattern",
         "average_time": 0.150,
         "execution_count": 100,
-        "timeout_rate": 0.05
+        "timeout_rate": 0.05,
     }
 ]
 ```

@@ -66,7 +66,7 @@ Use both whitelist and blacklist together:
 class AccessRestrictedHandler(SecurityHandler):
     @guard_deco.require_ip(
         whitelist=["192.168.0.0/16"],  # Allow internal network
-        blacklist=["192.168.1.100"],   # Except this specific IP
+        blacklist=["192.168.1.100"],  # Except this specific IP
     )
     async def get(self) -> None:
         self.write({"data": "Carefully controlled access"})
@@ -233,9 +233,9 @@ Stack multiple access control decorators for comprehensive protection:
 
 ```python
 class AdminSensitiveHandler(SecurityHandler):
-    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])       # Internal network only
-    @guard_deco.allow_countries(["US", "CA"])              # North America only
-    @guard_deco.block_clouds(["AWS", "GCP"])               # No cloud providers
+    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Internal network only
+    @guard_deco.allow_countries(["US", "CA"])  # North America only
+    @guard_deco.block_clouds(["AWS", "GCP"])  # No cloud providers
     async def post(self) -> None:
         self.write({"data": "Maximum security endpoint"})
 ```
@@ -245,22 +245,22 @@ class AdminSensitiveHandler(SecurityHandler):
 
 ```python
 class FinancialTransferHandler(SecurityHandler):
-    @guard_deco.require_ip(whitelist=["192.168.1.0/24"])   # Company network only
-    @guard_deco.allow_countries(["US"])                    # US jurisdiction only
-    @guard_deco.block_clouds()                             # No cloud/automation
+    @guard_deco.require_ip(whitelist=["192.168.1.0/24"])  # Company network only
+    @guard_deco.allow_countries(["US"])  # US jurisdiction only
+    @guard_deco.block_clouds()  # No cloud/automation
     async def post(self) -> None:
         self.write({"status": "transfer initiated"})
 
 
 class UserProfileHandler(SecurityHandler):
-    @guard_deco.block_countries(["CN", "RU", "IR"])        # Block certain countries
-    @guard_deco.block_clouds(["AWS", "GCP"])               # Block major clouds
+    @guard_deco.block_countries(["CN", "RU", "IR"])  # Block certain countries
+    @guard_deco.block_clouds(["AWS", "GCP"])  # Block major clouds
     async def get(self) -> None:
         self.write({"profile": "user data"})
 
 
 class PublicContentHandler(SecurityHandler):
-    @guard_deco.block_clouds(["DigitalOcean"])             # Block only specific providers
+    @guard_deco.block_clouds(["DigitalOcean"])  # Block only specific providers
     async def get(self) -> None:
         self.write({"content": "public information"})
 ```
@@ -357,9 +357,9 @@ Combine IP, geographic, and cloud controls for defense in depth:
 
 ```python
 class DefenceInDepthHandler(SecurityHandler):
-    @guard_deco.require_ip(whitelist=["192.168.0.0/16"])   # Internal network
-    @guard_deco.allow_countries(["US"])                    # US only
-    @guard_deco.block_clouds()                             # No automation
+    @guard_deco.require_ip(whitelist=["192.168.0.0/16"])  # Internal network
+    @guard_deco.allow_countries(["US"])  # US only
+    @guard_deco.block_clouds()  # No automation
     async def get(self) -> None:
         self.write({"data": "secure"})
 ```

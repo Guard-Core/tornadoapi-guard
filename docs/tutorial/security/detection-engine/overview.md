@@ -95,14 +95,10 @@ from tornadoapi_guard import SecurityConfig, SecurityHandler, SecurityMiddleware
 
 config = SecurityConfig(
     enable_penetration_detection=True,
-
     detection_compiler_timeout=2.0,
-
     detection_max_content_length=10000,
     detection_preserve_attack_patterns=True,
-
     detection_semantic_threshold=0.7,
-
     detection_slow_pattern_threshold=0.1,
     detection_monitor_history_size=1000,
 )
@@ -172,20 +168,14 @@ The engine returns detailed information about detected threats:
 {
     "is_threat": True,
     "threat_score": 0.85,
-    "threats": [
-        {
-            "type": "regex",
-            "pattern": "union.*select",
-            "execution_time": 0.002
-        }
-    ],
+    "threats": [{"type": "regex", "pattern": "union.*select", "execution_time": 0.002}],
     "context": "body:json",
     "original_length": 500,
     "processed_length": 500,
     "execution_time": 0.015,
     "detection_method": "enhanced",
     "timeouts": [],  # List of patterns that timed out
-    "correlation_id": "request-123"
+    "correlation_id": "request-123",
 }
 ```
 
@@ -229,16 +219,10 @@ The engine loads patterns from:
 from tornadoapi_guard import sus_patterns_handler
 
 # Add a pattern
-await sus_patterns_handler.add_pattern(
-    r"(?i)malicious.*pattern",
-    custom=True
-)
+await sus_patterns_handler.add_pattern(r"(?i)malicious.*pattern", custom=True)
 
 # Remove a pattern
-await sus_patterns_handler.remove_pattern(
-    r"(?i)malicious.*pattern",
-    custom=True
-)
+await sus_patterns_handler.remove_pattern(r"(?i)malicious.*pattern", custom=True)
 
 # Clear all custom patterns
 await sus_patterns_handler.clear_custom_patterns()
@@ -253,8 +237,7 @@ The timeout mechanism uses `asyncio.wait_for()` to prevent patterns from running
 ```python
 try:
     result = await asyncio.wait_for(
-        pattern_match(content),
-        timeout=config.detection_compiler_timeout
+        pattern_match(content), timeout=config.detection_compiler_timeout
     )
 except asyncio.TimeoutError:
     # Pattern timed out, log and continue

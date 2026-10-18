@@ -41,7 +41,9 @@ class AdvancedBusinessHoursHandler(SecurityHandler):
     @guard_deco.time_window("09:00", "17:00", "EST")
     async def get(self) -> None:
         self.write(
-            {"message": "Reports are only available during business hours (9 AM - 5 PM EST)"}
+            {
+                "message": "Reports are only available during business hours (9 AM - 5 PM EST)"
+            }
         )
 ```
 
@@ -97,9 +99,7 @@ Honeypots also work with JSON request bodies.
 
 ```python
 class AdvancedHoneypotHandler(SecurityHandler):
-    @guard_deco.honeypot_detection(
-        ["honeypot_field", "trap_input", "hidden_field"]
-    )
+    @guard_deco.honeypot_detection(["honeypot_field", "trap_input", "hidden_field"])
     async def post(self) -> None:
         self.write({"message": "Human user verified"})
 ```

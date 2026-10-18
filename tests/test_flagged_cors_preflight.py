@@ -71,7 +71,7 @@ async def test_a_flagged_enable_cors_call_makes_the_pipeline_answer_the_prefligh
     assert await _preflight(port) == 200
 
 
-async def test_the_check_exists_only_for_an_app_built_without_cors() -> None:
+async def test_the_check_is_in_every_pipeline_for_the_refusal_event() -> None:
     off_server, _, off = await _serve(SecurityConfig(enable_redis=False))
     on_server, _, on = await _serve(
         SecurityConfig(
@@ -80,12 +80,31 @@ async def test_the_check_exists_only_for_an_app_built_without_cors() -> None:
     )
     try:
         assert off.security_pipeline is not None and on.security_pipeline is not None
-        assert "cors_preflight" in [c.check_name for c in off.security_pipeline.checks]
-        assert "cors_preflight" not in [
-            c.check_name for c in on.security_pipeline.checks
-        ]
+        for middleware in (off, on):
+            assert "cors_preflight" in [
+                c.check_name for c in middleware.security_pipeline.checks
+            ]
     finally:
         off_server.stop()
         on_server.stop()
         await off.reset()
         await on.reset()
+
+
+async def test_a_flagged_enable_cors_call_reaches_the_simple_responses(
+    cors_off_server: tuple[int, SecurityMiddleware],
+) -> None:
+    port, _ = cors_off_server
+    client = AsyncHTTPClient()
+    url = f"http://127.0.0.1:{port}/"
+
+    before = await client.fetch(url, headers={"Origin": ORIGIN})
+    security_headers_manager.configure(
+        enable_cors=True, cors_origins=[ORIGIN], override_apps=True
+    )
+    after = await client.fetch(url, headers={"Origin": ORIGIN})
+    without_origin = await client.fetch(url)
+
+    assert before.headers.get("Access-Control-Allow-Origin") is None
+    assert after.headers.get("Access-Control-Allow-Origin") == ORIGIN
+    assert without_origin.headers.get("Access-Control-Allow-Origin") is None

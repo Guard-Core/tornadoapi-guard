@@ -263,11 +263,11 @@ Apply decorators from most specific to most general:
 
 ```python
 class AdminSensitiveHandler(SecurityHandler):
-    @guard_deco.require_https()                         # Security requirement
-    @guard_deco.require_auth(type="bearer")             # Authentication
-    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])    # Access control
-    @guard_deco.rate_limit(requests=5, window=3600)     # Rate limiting
-    @guard_deco.suspicious_detection(enabled=True)      # Monitoring
+    @guard_deco.require_https()  # Security requirement
+    @guard_deco.require_auth(type="bearer")  # Authentication
+    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Access control
+    @guard_deco.rate_limit(requests=5, window=3600)  # Rate limiting
+    @guard_deco.suspicious_detection(enabled=True)  # Monitoring
     async def post(self) -> None:
         self.write({"status": "admin action"})
 ```

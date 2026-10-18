@@ -33,11 +33,7 @@ import asyncio
 import tornado.web
 from tornadoapi_guard import SecurityConfig, SecurityHandler, SecurityMiddleware
 
-config = SecurityConfig(
-    security_headers={
-        "enabled": True
-    }
-)
+config = SecurityConfig(security_headers={"enabled": True})
 middleware = SecurityMiddleware(config=config)
 
 
@@ -83,7 +79,7 @@ config = SecurityConfig(
         "hsts": {
             "max_age": 31536000,  # 1 year
             "include_subdomains": True,
-            "preload": False
+            "preload": False,
         },
         "csp": {
             "default-src": ["'self'"],
@@ -92,7 +88,7 @@ config = SecurityConfig(
             "img-src": ["'self'", "data:", "https:"],
         },
         "frame_options": "DENY",
-        "referrer_policy": "no-referrer"
+        "referrer_policy": "no-referrer",
     }
 )
 ```
@@ -133,7 +129,7 @@ config = SecurityConfig(
             "default-src": ["'self'"],
             "script-src": ["'self'", "'unsafe-inline'"],
             "style-src": ["'self'", "'unsafe-inline'"],
-            "report-uri": ["/api/csp-report"]
+            "report-uri": ["/api/csp-report"],
         }
     }
 )
@@ -162,7 +158,7 @@ config = SecurityConfig(
             "base-uri": ["'self'"],
             "form-action": ["'self'"],
             "frame-ancestors": ["'none'"],
-            "upgrade-insecure-requests": []
+            "upgrade-insecure-requests": [],
         }
     }
 )
@@ -182,7 +178,7 @@ config = SecurityConfig(
             "connect-src": ["'self'", "https://api.example.com"],
             "font-src": ["'self'", "https://fonts.gstatic.com"],
             "frame-ancestors": ["'none'"],
-            "base-uri": ["'self'"]
+            "base-uri": ["'self'"],
         }
     }
 )
@@ -213,10 +209,7 @@ class CSPReportHandler(SecurityHandler):
 
 config = SecurityConfig(
     security_headers={
-        "csp": {
-            "default-src": ["'self'"],
-            "report-uri": ["/api/csp-report"]
-        }
+        "csp": {"default-src": ["'self'"], "report-uri": ["/api/csp-report"]}
     }
 )
 ```
@@ -237,7 +230,7 @@ config = SecurityConfig(
         "hsts": {
             "max_age": 31536000,  # 1 year
             "include_subdomains": True,
-            "preload": False
+            "preload": False,
         }
     }
 )
@@ -250,22 +243,14 @@ HSTS Rollout Strategy
 # Phase 1: Short duration (5 minutes)
 config = SecurityConfig(
     security_headers={
-        "hsts": {
-            "max_age": 300,
-            "include_subdomains": False,
-            "preload": False
-        }
+        "hsts": {"max_age": 300, "include_subdomains": False, "preload": False}
     }
 )
 
 # Phase 2: Longer duration (1 week)
 config = SecurityConfig(
     security_headers={
-        "hsts": {
-            "max_age": 604800,
-            "include_subdomains": True,
-            "preload": False
-        }
+        "hsts": {"max_age": 604800, "include_subdomains": True, "preload": False}
     }
 )
 
@@ -275,7 +260,7 @@ config = SecurityConfig(
         "hsts": {
             "max_age": 31536000,  # Required for preload
             "include_subdomains": True,  # Required for preload
-            "preload": True
+            "preload": True,
         }
     }
 )
@@ -290,26 +275,16 @@ Prevent your site from being embedded in frames:
 
 ```python
 # Option 1: Deny all framing
-config = SecurityConfig(
-    security_headers={
-        "frame_options": "DENY"
-    }
-)
+config = SecurityConfig(security_headers={"frame_options": "DENY"})
 
 # Option 2: Allow same-origin framing
-config = SecurityConfig(
-    security_headers={
-        "frame_options": "SAMEORIGIN"
-    }
-)
+config = SecurityConfig(security_headers={"frame_options": "SAMEORIGIN"})
 
 # Option 3: Use CSP frame-ancestors (more flexible)
 config = SecurityConfig(
     security_headers={
         "frame_options": None,  # Disable X-Frame-Options
-        "csp": {
-            "frame-ancestors": ["'self'", "https://trusted.example.com"]
-        }
+        "csp": {"frame-ancestors": ["'self'", "https://trusted.example.com"]},
     }
 )
 ```
@@ -328,14 +303,13 @@ config = SecurityConfig(
     cors_allow_credentials=True,
     cors_allow_methods=["GET", "POST"],
     cors_allow_headers=["*"],
-    
     security_headers={
         "enabled": True,
         "csp": {
             "default-src": ["'self'"],
-            "connect-src": ["'self'", "https://app.example.com"]
-        }
-    }
+            "connect-src": ["'self'", "https://app.example.com"],
+        },
+    },
 )
 ```
 
@@ -353,7 +327,7 @@ config = SecurityConfig(
             "X-Permitted-Cross-Domain-Policies": "none",
             "X-Download-Options": "noopen",
             "X-DNS-Prefetch-Control": "off",
-            "X-Robots-Tag": "noindex, nofollow"
+            "X-Robots-Tag": "noindex, nofollow",
         }
     }
 )
@@ -377,13 +351,15 @@ config = SecurityConfig(
         "hsts": {
             "max_age": 31536000 if is_production else 0,
             "include_subdomains": is_production,
-            "preload": is_production
+            "preload": is_production,
         },
         "csp": {
             "default-src": ["'self'"],
             "script-src": ["'self'"] + ([] if is_production else ["'unsafe-inline'"]),
             "style-src": ["'self'", "'unsafe-inline'"],
-        } if is_production else None  # Disable CSP in development
+        }
+        if is_production
+        else None,  # Disable CSP in development
     }
 )
 ```
@@ -399,13 +375,7 @@ Security headers configuration is cached in Redis for performance:
 config = SecurityConfig(
     enable_redis=True,
     redis_url="redis://localhost:6379",
-    
-    security_headers={
-        "enabled": True,
-        "csp": {
-            "default-src": ["'self'"]
-        }
-    }
+    security_headers={"enabled": True, "csp": {"default-src": ["'self'"]}},
 )
 
 # Headers are cached with TTL of 24 hours
@@ -505,8 +475,7 @@ import logging
 logging.getLogger("tornadoapi_guard.handlers.security_headers").setLevel(logging.DEBUG)
 
 config = SecurityConfig(
-    custom_log_file="security.log",
-    security_headers={"enabled": True}
+    custom_log_file="security.log", security_headers={"enabled": True}
 )
 ```
 
@@ -519,14 +488,10 @@ Monitor security header events with TornadoAPI Guard Agent:
 config = SecurityConfig(
     enable_agent=True,
     agent_api_key="your-api-key",
-    
     security_headers={
         "enabled": True,
-        "csp": {
-            "default-src": ["'self'"],
-            "report-uri": ["/api/csp-report"]
-        }
-    }
+        "csp": {"default-src": ["'self'"], "report-uri": ["/api/csp-report"]},
+    },
 )
 
 # Events sent to agent:
@@ -556,11 +521,7 @@ Or allow unsafe-inline in your CSP configuration (less secure):
 
 ```python
 config = SecurityConfig(
-    security_headers={
-        "csp": {
-            "script-src": ["'self'", "'unsafe-inline'"]
-        }
-    }
+    security_headers={"csp": {"script-src": ["'self'", "'unsafe-inline'"]}}
 )
 ```
 
@@ -576,7 +537,7 @@ config = SecurityConfig(
             "default-src": ["'self'"],
             "script-src": ["'self'", "https://cdn.jsdelivr.net"],
             "style-src": ["'self'", "https://fonts.googleapis.com"],
-            "font-src": ["'self'", "https://fonts.gstatic.com"]
+            "font-src": ["'self'", "https://fonts.gstatic.com"],
         }
     }
 )
@@ -589,11 +550,7 @@ Issue: HSTS Causing Access Issues
 
 ```python
 # Start with 5 minutes
-config = SecurityConfig(
-    security_headers={
-        "hsts": {"max_age": 300}
-    }
-)
+config = SecurityConfig(security_headers={"hsts": {"max_age": 300}})
 
 # Gradually increase after testing
 ```

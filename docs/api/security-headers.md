@@ -52,7 +52,7 @@ security_headers_manager.configure(
         "connect-src": ["'self'"],
         "frame-ancestors": ["'none'"],
         "base-uri": ["'self'"],
-        "form-action": ["'self'"]
+        "form-action": ["'self'"],
     },
     hsts_max_age=31536000,  # 1 year
     hsts_include_subdomains=True,
@@ -62,9 +62,7 @@ security_headers_manager.configure(
     xss_protection="1; mode=block",
     referrer_policy="strict-origin-when-cross-origin",
     permissions_policy="geolocation=(), microphone=(), camera=()",
-    custom_headers={
-        "X-Custom-Header": "CustomValue"
-    },
+    custom_headers={"X-Custom-Header": "CustomValue"},
     cors_origins=["https://app.example.com"],
     cors_allow_credentials=True,
     cors_allow_methods=["GET", "POST"],
@@ -112,8 +110,12 @@ security_headers_manager.configure(
     csp={"default-src": ["'self'", "https://cdn.example"]},
     override_apps=True,
 )  # every app: this CSP
-security_headers_manager.configure(frame_options="DENY", override_apps=True)  # drops csp from the override: WARNING, apps use their own CSP again
-security_headers_manager.configure(csp={"default-src": ["'none'"]})  # no flag: the manager only, no app changes
+security_headers_manager.configure(
+    frame_options="DENY", override_apps=True
+)  # drops csp from the override: WARNING, apps use their own CSP again
+security_headers_manager.configure(
+    csp={"default-src": ["'none'"]}
+)  # no flag: the manager only, no app changes
 await security_headers_manager.reset()  # clears the override
 ```
 
@@ -125,9 +127,7 @@ get_headers
 Get security headers for a response.
 
 ```python
-headers = await security_headers_manager.get_headers(
-    request_path="/api/endpoint"
-)
+headers = await security_headers_manager.get_headers(request_path="/api/endpoint")
 ```
 
 **Parameters:**
@@ -170,7 +170,7 @@ is_valid = await security_headers_manager.validate_csp_report(
             "violated-directive": "script-src",
             "blocked-uri": "https://evil.com/script.js",
             "source-file": "https://example.com/app.js",
-            "line-number": 10
+            "line-number": 10,
         }
     }
 )
@@ -284,9 +284,9 @@ HSTS Configuration
 
 ```python
 hsts_config = {
-    "max_age": 31536000,        # 1 year in seconds
+    "max_age": 31536000,  # 1 year in seconds
     "include_subdomains": True,  # Apply to all subdomains
-    "preload": False            # Submit to HSTS preload list
+    "preload": False,  # Submit to HSTS preload list
 }
 ```
 
@@ -317,7 +317,7 @@ cors_config = {
     "origins": ["https://app.example.com", "https://admin.example.com"],
     "allow_credentials": True,
     "allow_methods": ["GET", "POST", "PUT", "DELETE"],
-    "allow_headers": ["*"]
+    "allow_headers": ["*"],
 }
 ```
 
@@ -359,16 +359,12 @@ from tornadoapi_guard import SecurityConfig, SecurityHandler, SecurityMiddleware
 config = SecurityConfig(
     security_headers={
         "enabled": True,
-        "hsts": {
-            "max_age": 31536000,
-            "include_subdomains": True,
-            "preload": False
-        },
+        "hsts": {"max_age": 31536000, "include_subdomains": True, "preload": False},
         "frame_options": "DENY",
         "content_type_options": "nosniff",
         "xss_protection": "1; mode=block",
         "referrer_policy": "no-referrer",
-        "permissions_policy": "geolocation=(), microphone=(), camera=()"
+        "permissions_policy": "geolocation=(), microphone=(), camera=()",
     }
 )
 middleware = SecurityMiddleware(config=config)
@@ -410,8 +406,8 @@ config = SecurityConfig(
             "frame-ancestors": ["'none'"],
             "base-uri": ["'self'"],
             "form-action": ["'self'"],
-            "report-uri": ["/api/csp-report"]
-        }
+            "report-uri": ["/api/csp-report"],
+        },
     }
 )
 ```

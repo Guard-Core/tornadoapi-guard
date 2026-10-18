@@ -187,8 +187,12 @@ from tornadoapi_guard import SecurityMiddleware
 
 class AgentHealthHandler(tornado.web.RequestHandler):
     async def get(self) -> None:
-        middleware: SecurityMiddleware = self.application.settings["security_middleware"]
+        middleware: SecurityMiddleware = self.application.settings[
+            "security_middleware"
+        ]
         self.write(middleware.agent_stats)
+
+
 # {"enabled": True,
 #  "buffer_stats": {"events_dropped": 0, "metrics_dropped": 0, ...},
 #  "transport_stats": {"circuit_breaker_state": "CLOSED", ...}}

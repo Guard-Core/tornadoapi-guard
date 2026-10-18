@@ -332,11 +332,11 @@ Apply decorators in logical order, with more specific restrictions first:
 
 ```python
 class AdminSensitiveHandler(SecurityHandler):
-    @guard_deco.require_https()                        # Security requirement
-    @guard_deco.require_auth(type="bearer")            # Authentication
-    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])   # Access control
-    @guard_deco.rate_limit(requests=5, window=3600)    # Rate limiting
-    @guard_deco.suspicious_detection(enabled=True)     # Monitoring
+    @guard_deco.require_https()  # Security requirement
+    @guard_deco.require_auth(type="bearer")  # Authentication
+    @guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Access control
+    @guard_deco.rate_limit(requests=5, window=3600)  # Rate limiting
+    @guard_deco.suspicious_detection(enabled=True)  # Monitoring
     async def post(self) -> None:
         self.write({"status": "admin action"})
 ```
@@ -349,7 +349,9 @@ Use multiple behavioral decorators for comprehensive monitoring:
 ```python
 class RewardsHandler(SecurityHandler):
     @guard_deco.usage_monitor(max_calls=50, window=3600, action="ban")
-    @guard_deco.return_monitor("rare_item", max_occurrences=3, window=86400, action="ban")
+    @guard_deco.return_monitor(
+        "rare_item", max_occurrences=3, window=86400, action="ban"
+    )
     @guard_deco.suspicious_frequency(max_frequency=0.1, window=300, action="alert")
     async def get(self) -> None:
         self.write({"reward": "rare_item", "value": 1000})

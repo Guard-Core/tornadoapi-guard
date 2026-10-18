@@ -63,8 +63,10 @@ config = SecurityConfig(
 
 middleware = SecurityMiddleware(config=config)
 
+
 async def startup() -> None:
     await middleware.initialize()
+
 
 app = tornado.web.Application(
     [(r"/", SecurityHandler)],
@@ -110,6 +112,7 @@ config = SecurityConfig(
 )
 
 middleware = SecurityMiddleware(config=config)
+
 
 async def startup() -> None:
     await middleware.initialize()
@@ -157,6 +160,7 @@ config = SecurityConfig(
 
 middleware = SecurityMiddleware(config=config)
 
+
 async def startup() -> None:
     await middleware.initialize()
 ```
@@ -181,6 +185,7 @@ config = SecurityConfig(
 )
 
 middleware = SecurityMiddleware(config=config)
+
 
 async def startup() -> None:
     await middleware.initialize()
