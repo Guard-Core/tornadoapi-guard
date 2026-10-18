@@ -15,6 +15,7 @@ import pytest
 import tornado.httpserver
 import tornado.netutil
 import tornado.web
+from guard_core.handlers.security_headers_handler import SecurityHeadersManager
 from guard_core.models import SecurityConfig
 from guard_core.protocols.response_protocol import GuardResponse
 from tornado.httpclient import AsyncHTTPClient, HTTPResponse
@@ -28,6 +29,10 @@ from tornadoapi_guard import (
 
 security = SecurityDecorator(SecurityConfig(behavior_scan_response_body=True))
 XFF_BLOCKED = {"X-Forwarded-For": "10.9.9.9"}
+
+# guard-core 4.5.0 gives a bypass(all) response the security headers; 4.4.0 gave it
+# none. The marker is the per-middleware headers manager of 4.5.0.
+BYPASS_GETS_SECURITY_HEADERS = hasattr(SecurityHeadersManager, "isolated")
 XFF_REMOTE = {"X-Forwarded-For": "203.0.113.9"}
 
 
@@ -240,7 +245,7 @@ async def test_route_bypass_reaches_real_view_and_skips_response_pass(
     assert b"real view" in resp.body
     assert resp.headers["X-Modified"] == "1"
     assert srv.metrics == []
-    assert "X-Content-Type-Options" not in resp.headers
+    assert ("X-Content-Type-Options" in resp.headers) is BYPASS_GETS_SECURITY_HEADERS
 
 
 async def test_blocked_request_emits_no_request_metrics(serve: ServerFactory) -> None:
