@@ -32,6 +32,7 @@ from tornadoapi_guard.adapters import (
     TornadoGuardResponse,
     TornadoResponseFactory,
     get_guard_state,
+    merge_vary,
     sync_guard_response,
     unwrap_response,
 )
@@ -394,6 +395,8 @@ class SecurityMiddleware:
             return
         cors_headers = self._cors_handler.build_response_headers(dict(request_headers))
         for key, value in cors_headers.items():
+            if key.lower() == "vary":
+                value = merge_vary(response.headers.get("Vary"), value)
             response.headers[key] = value
 
     def _view_caller(

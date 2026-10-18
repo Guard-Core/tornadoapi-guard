@@ -194,3 +194,12 @@ def unwrap_response(guard_response: GuardResponse) -> TornadoGuardResponse:
         headers=dict(guard_response.headers),
         body=guard_response.body,
     )
+
+
+def merge_vary(existing: str | None, required: str) -> str:
+    if not existing or not existing.strip():
+        return required
+    tokens = {token.strip().lower() for token in existing.split(",")}
+    if tokens & {required.lower(), "*"}:
+        return existing
+    return f"{existing}, {required}"
