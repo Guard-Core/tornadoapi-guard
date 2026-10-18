@@ -243,6 +243,7 @@ class SecurityMiddleware:
             cors_allow_credentials=config.cors_allow_credentials,
             cors_allow_methods=config.cors_allow_methods,
             cors_allow_headers=config.cors_allow_headers,
+            override_apps=False,
         )
 
     def _build_security_pipeline(self) -> None:

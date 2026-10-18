@@ -98,3 +98,30 @@ async def test_the_response_manager_reaches_the_redis_of_its_app() -> None:
     assert middleware.response_factory.security_headers_manager.redis_handler is (
         middleware.redis_handler
     )
+
+
+async def test_building_a_second_app_does_not_override_the_first(port: int) -> None:
+    second = _middleware(security_headers={"enabled": True, "csp": GLOBAL_CSP})
+    app = tornado.web.Application([(r"/x", _Handler)], security_middleware=second)
+    await second.initialize()
+    sockets = tornado.netutil.bind_sockets(0, "127.0.0.1")
+    server = tornado.httpserver.HTTPServer(app)
+    server.add_sockets(sockets)
+    second_port = int(sockets[0].getsockname()[1])
+    try:
+        await _get(port, "/x")
+        await _get(second_port, "/x")
+
+        assert (
+            (await _get(port, "/x"))
+            .headers["Content-Security-Policy"]
+            .endswith("app.example")
+        )
+        assert (
+            (await _get(second_port, "/x"))
+            .headers["Content-Security-Policy"]
+            .endswith("global.example")
+        )
+    finally:
+        server.stop()
+        await second.reset()
