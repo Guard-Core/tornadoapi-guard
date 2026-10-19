@@ -447,7 +447,7 @@ class SecurityMiddleware:
             version="HTTP/1.1",
             headers=HTTPHeaders({"Host": "localhost"}),
             host="localhost",
-            connection=_NoConnection(),
+            connection=cast(Any, _NoConnection()),
         )
         delegate = application.find_handler(request)
         handler_class = getattr(delegate, "handler_class", None)
