@@ -338,10 +338,10 @@ ___
 WebSocket Handler Group (`/ws`)
 -------------------------------
 
-The example exposes a simple echo WebSocket at `/ws` using Tornado's native `WebSocketHandler`. Note that WebSocket handlers inherit from `tornado.websocket.WebSocketHandler` and do **not** go through `SecurityHandler.prepare()` — the HTTP upgrade request is still routed through Tornado, but the security pipeline is not applied. Use HTTP-level decorators on an adjacent handler if you need to gate WebSocket access.
+The example exposes a simple echo WebSocket at `/ws`. The handler inherits from `SecurityWebSocketHandler`, whose `prepare()` runs the security pipeline on the HTTP upgrade request before the handshake, so a banned, blocked, rate-limited or emergency-locked client never gets a WebSocket (with `passive_mode` the denial is only logged). A plain `tornado.websocket.WebSocketHandler` would not go through the pipeline.
 
 ```python
-class EchoWebSocketHandler(tornado.websocket.WebSocketHandler):
+class EchoWebSocketHandler(SecurityWebSocketHandler):
     def check_origin(self, origin: str) -> bool:
         return True
 

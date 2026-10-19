@@ -11,7 +11,6 @@ from typing import Any
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
-import tornado.websocket
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
 
@@ -21,6 +20,7 @@ from tornadoapi_guard import (
     SecurityDecorator,
     SecurityHandler,
     SecurityMiddleware,
+    SecurityWebSocketHandler,
     TornadoGuardResponse,
     cloud_handler,
 )
@@ -856,7 +856,7 @@ class TestMixedAttackHandler(JSONHandler):
         )
 
 
-class EchoWebSocketHandler(tornado.websocket.WebSocketHandler):
+class EchoWebSocketHandler(SecurityWebSocketHandler):
     def check_origin(self, origin: str) -> bool:
         return True
 

@@ -33,7 +33,7 @@ from tornadoapi_guard.adapters import (
     apply_guard_response,
     unwrap_response,
 )
-from tornadoapi_guard.handler import SecurityHandler
+from tornadoapi_guard.handler import SecurityHandler, SecurityWebSocketHandler
 from tornadoapi_guard.middleware import SecurityMiddleware
 
 try:
@@ -45,6 +45,7 @@ __all__ = [
     "__version__",
     "SecurityMiddleware",
     "SecurityHandler",
+    "SecurityWebSocketHandler",
     "SecurityConfig",
     "SecurityDecorator",
     "RouteConfig",

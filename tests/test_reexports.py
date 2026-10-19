@@ -26,6 +26,7 @@ def test_core_types_importable() -> None:
         SecurityHandler,
         SecurityHeadersManager,
         SecurityMiddleware,
+        SecurityWebSocketHandler,
         TornadoGuardRequest,
         TornadoGuardResponse,
         TornadoResponseFactory,
@@ -36,6 +37,7 @@ def test_core_types_importable() -> None:
     assert SecurityConfig is not None
     assert SecurityMiddleware is not None
     assert SecurityHandler is not None
+    assert SecurityWebSocketHandler is not None
     assert TornadoGuardRequest is not None
     assert TornadoGuardResponse is not None
     assert TornadoResponseFactory is not None

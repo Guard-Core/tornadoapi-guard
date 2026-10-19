@@ -4,6 +4,7 @@ import asyncio
 from typing import Any
 
 from tornado.web import RequestHandler
+from tornado.websocket import WebSocketHandler
 
 from tornadoapi_guard.adapters import apply_guard_response, get_guard_state
 from tornadoapi_guard.middleware import SecurityMiddleware
@@ -11,15 +12,26 @@ from tornadoapi_guard.middleware import SecurityMiddleware
 _background_tasks: set[asyncio.Future[None]] = set()
 
 
+def _security_middleware_of(handler: RequestHandler) -> SecurityMiddleware | None:
+    value = handler.application.settings.get("security_middleware")
+    if isinstance(value, SecurityMiddleware):
+        return value
+    return None
+
+
+async def _guard_handshake_or_request(handler: RequestHandler) -> None:
+    middleware = _security_middleware_of(handler)
+    if middleware is None:
+        return
+
+    early = await middleware.run_pre_processing(handler)
+    if early is not None:
+        apply_guard_response(handler, early)
+
+
 class SecurityHandler(RequestHandler):
     async def prepare(self) -> None:
-        middleware = self._get_security_middleware()
-        if middleware is None:
-            return
-
-        early = await middleware.run_pre_processing(self)
-        if early is not None:
-            apply_guard_response(self, early)
+        await _guard_handshake_or_request(self)
 
     def finish(self, chunk: str | bytes | dict[str, Any] | None = None) -> Any:
         state = get_guard_state(self)
@@ -52,7 +64,17 @@ class SecurityHandler(RequestHandler):
         await super().finish()
 
     def _get_security_middleware(self) -> SecurityMiddleware | None:
-        value = self.application.settings.get("security_middleware")
-        if isinstance(value, SecurityMiddleware):
-            return value
-        return None
+        return _security_middleware_of(self)
+
+
+class SecurityWebSocketHandler(WebSocketHandler):
+    """Runs the security pipeline on the upgrade request, before the handshake.
+
+    A denied upgrade is answered like any denied request (403, 429, 503 and so
+    on) and no WebSocket is opened. With passive_mode the denial is logged and
+    the upgrade proceeds. The response pass (return rules, security headers,
+    metrics) belongs to an HTTP response, so it does not run for the 101.
+    """
+
+    async def prepare(self) -> None:
+        await _guard_handshake_or_request(self)

@@ -134,29 +134,28 @@ Two things to notice:
 
 ___
 
-Combining with `tornado.websocket.WebSocketHandler`
----------------------------------------------------
+Guarding a `tornado.websocket.WebSocketHandler`
+-----------------------------------------------
 
-`SecurityHandler` extends `tornado.web.RequestHandler`, not `tornado.websocket.WebSocketHandler`. WebSocket handlers therefore do **not** flow through the `tornadoapi-guard` pipeline — `prepare()` is not overridden for them and the middleware's security checks will not run.
-
-If you need to protect a WebSocket endpoint, implement the checks directly on the WebSocket handler:
+`SecurityHandler` extends `tornado.web.RequestHandler`, so a plain `tornado.websocket.WebSocketHandler` does not flow through the `tornadoapi-guard` pipeline. Subclass `SecurityWebSocketHandler` instead. Its `prepare()` runs the same pipeline as `SecurityHandler.prepare()` on the upgrade request, before Tornado starts the handshake, so every check runs against the WebSocket upgrade as it does against an HTTP request: emergency mode (with `emergency_exempt_paths`), IP ban, IP allow and block lists, blocked countries and cloud providers, user agent, rate limiting and penetration detection.
 
 ```python
-import tornado.websocket
+from tornadoapi_guard import SecurityWebSocketHandler
 
 
-class ProtectedWebSocketHandler(tornado.websocket.WebSocketHandler):
+class ProtectedWebSocketHandler(SecurityWebSocketHandler):
     def check_origin(self, origin: str) -> bool:
         return origin in {"https://example.com", "https://app.example.com"}
 
-    async def open(self) -> None:
-        token = self.request.headers.get("Authorization")
-        if not token or not await verify_token(token):
-            self.close(code=4401, reason="unauthorized")
-            return
+    async def on_message(self, message: str | bytes) -> None:
+        await self.write_message(message)
 ```
 
-The example application in `examples/simple_app/main.py` ships with an `EchoWebSocketHandler` that demonstrates this pattern.
+Register it like any other handler, on an `Application` that carries `security_middleware=...`. A denied upgrade gets the response the HTTP pipeline gives (403, 429, 503) and no WebSocket is opened. With `passive_mode=True` the denial is logged with the `[PASSIVE MODE]` line and the upgrade proceeds. Without a `security_middleware` setting the handler behaves like a plain `WebSocketHandler`.
+
+The response pass (return rules, security headers, metrics) belongs to an HTTP response, so it does not run for the `101 Switching Protocols` reply. The upgrade requests share the rate-limit bucket of the HTTP routes for the same client.
+
+The example application in `examples/simple_app/main.py` ships with an `EchoWebSocketHandler` that guards its `/ws` endpoint this way.
 
 ___
 

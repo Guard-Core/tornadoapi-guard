@@ -59,7 +59,7 @@ app = tornado.web.Application(
 )
 ```
 
-`SecurityHandler.prepare()` runs pre-processing (CORS preflight, engine passthrough and bypass handlers, route resolution, the 17-check `SecurityCheckPipeline`); an early response is written through `apply_guard_response` and skips the response pass. `finish()` runs the engine response pass (return rules, metrics, security headers, CORS, modifier) before the flush. `security_middleware.agent_stats` exposes the agent's live buffer state for health-check endpoints.
+`SecurityHandler.prepare()` runs pre-processing (CORS preflight, engine passthrough and bypass handlers, route resolution, the 17-check `SecurityCheckPipeline`); an early response is written through `apply_guard_response` and skips the response pass. `finish()` runs the engine response pass (return rules, metrics, security headers, CORS, modifier) before the flush. Subclass `SecurityWebSocketHandler` instead of `tornado.websocket.WebSocketHandler` to run the same pipeline on the upgrade request before the handshake (a denied upgrade gets the HTTP response and no socket opens; `passive_mode` logs and proceeds; no response pass for the 101). `security_middleware.agent_stats` exposes the agent's live buffer state for health-check endpoints.
 
 ## Route-Level Security Decorators
 
