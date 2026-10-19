@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
@@ -134,6 +135,74 @@ async def test_the_lookup_is_traversal_safe_and_never_cached(
     assert await middleware.static_file_exists("/static/late.ts") is True
     late.unlink()
     assert await middleware.static_file_exists("/static/late.ts") is False
+
+
+async def test_the_lookup_validates_on_the_event_loop_like_tornado_does(
+    app: tuple[int, SecurityMiddleware, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    port, middleware, _ = app
+    await _status(port, "/page/x")
+    threads: list[int] = []
+    original = StaticFileHandler.validate_absolute_path
+
+    def recording(self: StaticFileHandler, root: str, absolute_path: str) -> Any:
+        threads.append(threading.get_ident())
+        return original(self, root, absolute_path)
+
+    monkeypatch.setattr(StaticFileHandler, "validate_absolute_path", recording)
+
+    assert await middleware.static_file_exists("/static/real.ts") is True
+    assert threads == [threading.get_ident()]
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/static/%2e%2e/secret.ts",
+        "/static/..%2fsecret.ts",
+        "/static/%2e%2e%2fsecret.ts",
+        "/static/js/../../secret.ts",
+    ],
+)
+async def test_traversal_in_any_encoding_is_not_a_served_file(
+    app: tuple[int, SecurityMiddleware, Path], path: str
+) -> None:
+    port, middleware, _ = app
+    await _status(port, "/page/x")
+
+    assert await middleware.static_file_exists(path) is False
+
+
+async def test_a_directory_with_a_default_filename_is_judged_like_tornado(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "index.ts").write_text("x")
+    middleware = SecurityMiddleware(config=_config())
+    await middleware.initialize()
+    application = tornado.web.Application(
+        [
+            (
+                r"/docs/(.*)",
+                GuardedStaticFiles,
+                {"path": str(tmp_path / "docs"), "default_filename": "index.ts"},
+            ),
+            (r"/page/(.*)", PageHandler),
+        ],
+        security_middleware=middleware,
+    )
+    sockets = tornado.netutil.bind_sockets(0, "127.0.0.1")
+    server = tornado.httpserver.HTTPServer(application)
+    server.add_sockets(sockets)
+    try:
+        await _status(sockets[0].getsockname()[1], "/page/x")
+
+        assert await middleware.static_file_exists("/docs/") is True
+        assert await middleware.static_file_exists("/docs/index.ts") is True
+        assert await middleware.static_file_exists("/docs/other.ts") is False
+    finally:
+        server.stop()
+        await middleware.reset()
 
 
 async def test_a_middleware_that_has_seen_no_request_answers_false() -> None:

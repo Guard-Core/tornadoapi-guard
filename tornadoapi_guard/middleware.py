@@ -463,9 +463,7 @@ class SecurityMiddleware:
                 raw = delegate.path_args[0] if delegate.path_args else b""
             handler.path = handler.parse_url_path(handler.decode_argument(raw))
             absolute = handler.get_absolute_path(handler.root, handler.path)
-            validated = await asyncio.to_thread(
-                handler.validate_absolute_path, handler.root, absolute
-            )
+            validated = handler.validate_absolute_path(handler.root, absolute)
         except HTTPError:
             return False
         return validated is not None
