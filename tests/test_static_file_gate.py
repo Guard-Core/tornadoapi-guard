@@ -140,3 +140,45 @@ async def test_a_middleware_that_has_seen_no_request_answers_false() -> None:
     middleware = SecurityMiddleware(config=_config())
 
     assert await middleware.static_file_exists("/static/real.ts") is False
+
+
+STATIC_MOUNT_CORPUS = (
+    "hls/live/segment_000.ts",
+    "hls/live/segment_001.ts",
+    "hls/vod/720p/chunk-00042.ts",
+    "hls/vod/1080p/chunk-00001.ts",
+    "hls/audio/seg-12.ts",
+    "assets/index-4f3a9c1e.js.map",
+    "assets/vendor-b82d.js.map",
+    "assets/main.css.map",
+    "_next/static/chunks/app/page-9d8c.js.map",
+    "_next/static/chunks/webpack-1a2b.js.map",
+    "static/js/main.4f3a.chunk.js.map",
+    "static/css/main.8e1.chunk.css.map",
+    "dist/bundle.min.js.map",
+    "build/static/js/2.abc123.chunk.js.map",
+    "js/jquery.min.map",
+    "assets/ts/sample.ts",
+    "examples/demo.ts",
+)
+
+
+@pytest.mark.parametrize("name", STATIC_MOUNT_CORPUS)
+async def test_the_static_mount_benign_corpus_is_clean_when_the_files_exist(
+    app: tuple[int, SecurityMiddleware, Path], name: str
+) -> None:
+    port, _, root = app
+    target = root / "hls" / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("x")
+
+    assert await _status(port, f"/hls/{name}") == 200
+
+
+@pytest.mark.parametrize("name", STATIC_MOUNT_CORPUS)
+async def test_the_static_mount_benign_corpus_is_flagged_without_a_static_mount(
+    app: tuple[int, SecurityMiddleware, Path], name: str
+) -> None:
+    port, _, _ = app
+
+    assert await _status(port, f"/page/{name}") == 400
