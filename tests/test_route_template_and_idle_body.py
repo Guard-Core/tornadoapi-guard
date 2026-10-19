@@ -29,6 +29,7 @@ ROUTES: list[Any] = [
     (r"/files/(.*)", PageHandler),
     (r"/legacy/(.*)\.php", PageHandler),
     (r"/echo", PageHandler),
+    (r"/(?P<language>[^/]+)/news", PageHandler),
 ]
 
 
@@ -85,6 +86,7 @@ async def _status(port: int, path: str, **kwargs: Any) -> int:
         ("/files/shop/cart.php", 400),
         ("/files/a.php", 400),
         ("/echo", 200),
+        ("/language/news", 400),
     ],
 )
 async def test_a_script_path_is_clean_only_when_the_app_declares_it(
