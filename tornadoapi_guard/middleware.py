@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import time
+from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Any, cast
 
@@ -60,6 +61,27 @@ def _rule_prefixes(rules: Any) -> list[str]:
     return prefixes
 
 
+_ROUTE_TEMPLATE_CACHE_SIZE = 4096
+
+
+def _rule_count(rules: Any) -> int:
+    return sum(1 + _rule_count(getattr(rule.target, "rules", ())) for rule in rules)
+
+
+def _matched_template(rules: Any, request: HTTPServerRequest) -> str | None:
+    for rule in rules:
+        if rule.matcher.match(request) is None:
+            continue
+        nested = getattr(rule.target, "rules", None)
+        if nested is not None:
+            inner = _matched_template(nested, request)
+            if inner is not None:
+                return inner
+        regex = getattr(rule.matcher, "regex", None)
+        return cast(str, regex.pattern) if regex is not None else None
+    return None
+
+
 class SecurityMiddleware:
     def __init__(self, *, config: SecurityConfig) -> None:
         self.config = config
@@ -109,6 +131,8 @@ class SecurityMiddleware:
 
         self.security_pipeline: SecurityCheckPipeline | None = None
         self._routing_application: Any = None
+        self._route_template_cache: OrderedDict[str, str | None] = OrderedDict()
+        self._route_template_signature: tuple[int, int] | None = None
 
         self._guard_response_factory = TornadoResponseFactory()
         self._cors_handler = CorsHandler(config)
@@ -382,6 +406,31 @@ class SecurityMiddleware:
             if getattr(handler_class, method.lower())
             is not getattr(RequestHandler, method.lower())
         )
+
+    def route_template(self, path: str) -> str | None:
+        application = self._routing_application
+        if application is None:
+            return None
+        rules = application.default_router.rules
+        signature = (id(rules), _rule_count(rules))
+        if signature != self._route_template_signature:
+            self._route_template_cache.clear()
+            self._route_template_signature = signature
+        if path in self._route_template_cache:
+            self._route_template_cache.move_to_end(path)
+            return self._route_template_cache[path]
+        request = HTTPServerRequest(
+            method="GET",
+            uri=path,
+            version="HTTP/1.1",
+            headers=HTTPHeaders({"Host": "localhost"}),
+            host="localhost",
+        )
+        template = _matched_template(rules, request)
+        self._route_template_cache[path] = template
+        if len(self._route_template_cache) > _ROUTE_TEMPLATE_CACHE_SIZE:
+            self._route_template_cache.popitem(last=False)
+        return template
 
     def static_route_prefixes(self) -> tuple[str, ...]:
         application = self._routing_application

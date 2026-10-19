@@ -68,6 +68,13 @@ class TornadoGuardRequest:
     async def body(self) -> bytes:
         return self._request.body or b""
 
+    async def read_body_prefix_until_idle(
+        self, max_bytes: int, idle_timeout: float
+    ) -> bytes:
+        if max_bytes <= 0:
+            return b""
+        return (self._request.body or b"")[:max_bytes]
+
     @property
     def state(self) -> Any:
         return self._state
