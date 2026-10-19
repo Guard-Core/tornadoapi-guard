@@ -26,7 +26,7 @@ from guard_core.models import SecurityConfig
 from guard_core.protocols.response_protocol import GuardResponse
 from guard_core.utils import extract_client_ip, setup_custom_logging
 from tornado.httputil import HTTPHeaders, HTTPServerRequest
-from tornado.web import ErrorHandler, RequestHandler
+from tornado.web import ErrorHandler, HTTPError, RequestHandler, StaticFileHandler
 
 from tornadoapi_guard.adapters import (
     TornadoGuardRequest,
@@ -62,6 +62,11 @@ def _rule_prefixes(rules: Any) -> list[str]:
 
 
 _ROUTE_TEMPLATE_CACHE_SIZE = 4096
+
+
+class _NoConnection:
+    def set_close_callback(self, callback: Any) -> None:
+        return None
 
 
 def _rule_count(rules: Any) -> int:
@@ -431,6 +436,39 @@ class SecurityMiddleware:
         if len(self._route_template_cache) > _ROUTE_TEMPLATE_CACHE_SIZE:
             self._route_template_cache.popitem(last=False)
         return template
+
+    async def static_file_exists(self, path: str) -> bool:
+        application = self._routing_application
+        if application is None:
+            return False
+        request = HTTPServerRequest(
+            method="GET",
+            uri=path,
+            version="HTTP/1.1",
+            headers=HTTPHeaders({"Host": "localhost"}),
+            host="localhost",
+            connection=_NoConnection(),
+        )
+        delegate = application.find_handler(request)
+        handler_class = getattr(delegate, "handler_class", None)
+        if not (
+            isinstance(handler_class, type)
+            and issubclass(handler_class, StaticFileHandler)
+        ):
+            return False
+        try:
+            handler = handler_class(application, request, **delegate.handler_kwargs)
+            raw = delegate.path_kwargs.get("path")
+            if raw is None:
+                raw = delegate.path_args[0] if delegate.path_args else b""
+            handler.path = handler.parse_url_path(handler.decode_argument(raw))
+            absolute = handler.get_absolute_path(handler.root, handler.path)
+            validated = await asyncio.to_thread(
+                handler.validate_absolute_path, handler.root, absolute
+            )
+        except HTTPError:
+            return False
+        return validated is not None
 
     def static_route_prefixes(self) -> tuple[str, ...]:
         application = self._routing_application
