@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import cast
@@ -8,12 +9,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from guard_core.decorators.base import RouteConfig
 from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
 from guard_core.models import SecurityConfig
 from tornado.web import RequestHandler
 
 from tornadoapi_guard import SecurityMiddleware
 from tornadoapi_guard.adapters import TornadoGuardRequest, get_guard_state
+
+REDIS_URL = os.getenv("REDIS_URL") or "redis://localhost:6379"
 
 
 class _StampedEndpoint:
@@ -91,7 +95,7 @@ async def test_init_with_redis_enabled() -> None:
     config = SecurityConfig(
         geo_ip_handler=None,
         enable_redis=True,
-        redis_url="redis://localhost:6379",
+        redis_url=REDIS_URL,
         redis_prefix="test_init",
         enable_penetration_detection=False,
     )
@@ -100,7 +104,7 @@ async def test_init_with_redis_enabled() -> None:
 
 
 async def test_init_with_blocked_countries_sets_geoip() -> None:
-    geo = MagicMock()
+    geo = IPInfoManager("test-token", None)
     config = SecurityConfig(
         geo_ip_handler=geo,
         enable_redis=False,
@@ -409,7 +413,7 @@ async def test_refresh_cloud_ip_ranges_redis_path() -> None:
     config = SecurityConfig(
         geo_ip_handler=None,
         enable_redis=True,
-        redis_url="redis://localhost:6379",
+        redis_url=REDIS_URL,
         redis_prefix="test_cloud",
         enable_penetration_detection=False,
         block_cloud_providers={"AWS"},
