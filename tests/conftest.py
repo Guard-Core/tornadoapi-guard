@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
+from typing import Any
 
 import pytest
 from guard_core.handlers.cloud_handler import cloud_handler
@@ -11,16 +12,45 @@ from guard_core.handlers.ratelimit_handler import (
     RateLimitManager,
     rate_limit_handler,
 )
-from guard_core.handlers.redis_handler import RedisManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
 from guard_core.handlers.suspatterns_handler import sus_patterns_handler
 from guard_core.models import SecurityConfig
 
+from tests.redis_isolation import (
+    REDIS_PREFIX,
+    REDIS_URL,
+    delete_every_key_under_the_suite_prefix,
+    point_security_config_defaults_at_the_test_redis,
+    refuse_connections_to_the_default_redis_port,
+    refused_connections,
+)
 from tornadoapi_guard import SecurityMiddleware
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "")
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-REDIS_PREFIX = os.getenv("REDIS_PREFIX", "tornadoapi_guard_test")
+
+point_security_config_defaults_at_the_test_redis()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _refuse_the_default_redis_port() -> Generator[None, None, None]:
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        refuse_connections_to_the_default_redis_port(monkeypatch)
+        yield
+
+
+@pytest.fixture(autouse=True)
+def refused_redis_connections() -> Generator[list[tuple[Any, ...]], None, None]:
+    refused_connections.clear()
+    yield refused_connections
+    attempts = list(refused_connections)
+    refused_connections.clear()
+    assert not attempts, f"the test connected to port 6379: {attempts}"
+
+
+def pytest_terminal_summary(terminalreporter: pytest.TerminalReporter) -> None:
+    terminalreporter.write_line(
+        f"redis isolation: REDIS_URL={REDIS_URL} REDIS_PREFIX={REDIS_PREFIX}"
+    )
 
 
 def _maybe_geo_ip() -> IPInfoManager | None:
@@ -86,21 +116,6 @@ async def security_middleware(
     await middleware.reset()
 
 
-@pytest.fixture
-async def redis_cleanup() -> AsyncGenerator[None, None]:
-    config = SecurityConfig(
-        geo_ip_handler=_maybe_geo_ip(),
-        redis_url=REDIS_URL,
-        redis_prefix=REDIS_PREFIX,
-    )
-    handler = RedisManager(config)
-    try:
-        await handler.initialize()
-        await handler.delete_pattern(f"{REDIS_PREFIX}*")
-    except Exception:
-        pass
-    yield
-    try:
-        await handler.close()
-    except Exception:
-        pass
+@pytest.fixture(autouse=True)
+def redis_cleanup() -> None:
+    delete_every_key_under_the_suite_prefix()
