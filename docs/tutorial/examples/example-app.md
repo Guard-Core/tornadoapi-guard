@@ -60,11 +60,11 @@ Architecture Overview
 
 The example is built around three objects that every TornadoAPI Guard application needs:
 
-- **`SecurityMiddleware`** — holds the security pipeline, the metrics collector, and the event bus. Instantiated once at module level and then `await security_middleware.initialize()` is called in `main()` before the server starts.
+- **`SecurityMiddleware`** - holds the security pipeline, the metrics collector, and the event bus. Instantiated once at module level and then `await security_middleware.initialize()` is called in `main()` before the server starts.
 - **`SecurityHandler`** - base class that every route inherits from (directly or via a small project-specific subclass like the `JSONHandler` in the example). `SecurityHandler.prepare()` runs the full security pipeline before the handler method, and `SecurityHandler.finish()` runs the response pass (metrics, return rules, headers, modifier) before the response is flushed.
-- **`SecurityDecorator`** — route-level decorator set. Instantiated once at module level and registered with the middleware via `security_middleware.set_decorator_handler(guard_decorator)`. Applied to handler methods (`get`, `post`, `put`, ...), never to the class.
+- **`SecurityDecorator`** - route-level decorator set. Instantiated once at module level and registered with the middleware via `security_middleware.set_decorator_handler(guard_decorator)`. Applied to handler methods (`get`, `post`, `put`, ...), never to the class.
 
-The example also defines a project-specific `JSONHandler(SecurityHandler)` subclass that adds `write_json` / `write_error` helpers — a useful pattern for any production app.
+The example also defines a project-specific `JSONHandler(SecurityHandler)` subclass that adds `write_json` / `write_error` helpers - a useful pattern for any production app.
 
 ```python
 security_middleware = SecurityMiddleware(config=security_config)
@@ -97,11 +97,11 @@ ___
 Basic Handler Group (`/basic/*`)
 --------------------------------
 
-- `/` — `RootHandler`: landing page listing all route groups.
-- `/basic/` — `BasicRootHandler`
-- `/basic/ip` — `BasicIPHandler`: echoes client IP + geo placeholders.
-- `/basic/health` — `BasicHealthHandler`
-- `/basic/echo` — `BasicEchoHandler`: echoes JSON body and headers.
+- `/` - `RootHandler`: landing page listing all route groups.
+- `/basic/` - `BasicRootHandler`
+- `/basic/ip` - `BasicIPHandler`: echoes client IP + geo placeholders.
+- `/basic/health` - `BasicHealthHandler`
+- `/basic/echo` - `BasicEchoHandler`: echoes JSON body and headers.
 
 ```python
 class BasicEchoHandler(JSONHandler):
@@ -128,13 +128,13 @@ ___
 Access Control Handler Group (`/access/*`)
 ------------------------------------------
 
-- `/access/ip-whitelist` — `AccessIPWhitelistHandler`
-- `/access/ip-blacklist` — `AccessIPBlacklistHandler`
-- `/access/country-block` — `AccessCountryBlockHandler`
-- `/access/country-allow` — `AccessCountryAllowHandler`
-- `/access/no-cloud` — `AccessNoCloudHandler`
-- `/access/no-aws` — `AccessNoAWSHandler`
-- `/access/bypass-demo` — `AccessBypassHandler`
+- `/access/ip-whitelist` - `AccessIPWhitelistHandler`
+- `/access/ip-blacklist` - `AccessIPBlacklistHandler`
+- `/access/country-block` - `AccessCountryBlockHandler`
+- `/access/country-allow` - `AccessCountryAllowHandler`
+- `/access/no-cloud` - `AccessNoCloudHandler`
+- `/access/no-aws` - `AccessNoAWSHandler`
+- `/access/bypass-demo` - `AccessBypassHandler`
 
 ```python
 class AccessIPWhitelistHandler(JSONHandler):
@@ -148,10 +148,10 @@ ___
 Authentication Handler Group (`/auth/*`)
 ----------------------------------------
 
-- `/auth/https-only` — `AuthHttpsHandler`
-- `/auth/bearer-auth` — `AuthBearerHandler`
-- `/auth/api-key` — `AuthAPIKeyHandler`
-- `/auth/custom-headers` — `AuthCustomHeadersHandler`
+- `/auth/https-only` - `AuthHttpsHandler`
+- `/auth/bearer-auth` - `AuthBearerHandler`
+- `/auth/api-key` - `AuthAPIKeyHandler`
+- `/auth/custom-headers` - `AuthCustomHeadersHandler`
 
 ```python
 class AuthBearerHandler(JSONHandler):
@@ -172,9 +172,9 @@ ___
 Rate Limiting Handler Group (`/rate/*`)
 ---------------------------------------
 
-- `/rate/custom-limit` — `RateCustomLimitHandler` (5 per 60s)
-- `/rate/strict-limit` — `RateStrictLimitHandler` (1 per 10s)
-- `/rate/geo-rate-limit` — `RateGeoHandler`
+- `/rate/custom-limit` - `RateCustomLimitHandler` (5 per 60s)
+- `/rate/strict-limit` - `RateStrictLimitHandler` (1 per 10s)
+- `/rate/geo-rate-limit` - `RateGeoHandler`
 
 ```python
 class RateGeoHandler(JSONHandler):
@@ -195,10 +195,10 @@ ___
 Behavioral Handler Group (`/behavior/*`)
 ----------------------------------------
 
-- `/behavior/usage-monitor` — `BehaviorUsageHandler`
-- `/behavior/return-monitor/<code>` — `BehaviorReturnMonitorHandler`
-- `/behavior/suspicious-frequency` — `BehaviorSuspiciousFrequencyHandler`
-- `/behavior/behavior-rules` — `BehaviorComplexHandler`
+- `/behavior/usage-monitor` - `BehaviorUsageHandler`
+- `/behavior/return-monitor/<code>` - `BehaviorReturnMonitorHandler`
+- `/behavior/suspicious-frequency` - `BehaviorSuspiciousFrequencyHandler`
+- `/behavior/behavior-rules` - `BehaviorComplexHandler`
 
 ```python
 class BehaviorComplexHandler(JSONHandler):
@@ -225,12 +225,12 @@ ___
 Headers Handler Group (`/headers/*`)
 ------------------------------------
 
-- `/headers/` — `HeadersInfoHandler`
-- `/headers/test-page` — `HeadersTestPageHandler`
-- `/headers/csp-report` — `HeadersCspReportHandler`
-- `/headers/frame-test` — `HeadersFrameTestHandler`
-- `/headers/hsts-info` — `HeadersHSTSHandler`
-- `/headers/security-analysis` — `HeadersAnalysisHandler`
+- `/headers/` - `HeadersInfoHandler`
+- `/headers/test-page` - `HeadersTestPageHandler`
+- `/headers/csp-report` - `HeadersCspReportHandler`
+- `/headers/frame-test` - `HeadersFrameTestHandler`
+- `/headers/hsts-info` - `HeadersHSTSHandler`
+- `/headers/security-analysis` - `HeadersAnalysisHandler`
 
 ```python
 class HeadersCspReportHandler(JSONHandler):
@@ -254,11 +254,11 @@ ___
 Content Handler Group (`/content/*`)
 ------------------------------------
 
-- `/content/no-bots` — `ContentNoBotsHandler`
-- `/content/json-only` — `ContentJSONOnlyHandler`
-- `/content/size-limit` — `ContentSizeLimitHandler`
-- `/content/referrer-check` — `ContentReferrerHandler`
-- `/content/custom-validation` — `ContentCustomValidationHandler`
+- `/content/no-bots` - `ContentNoBotsHandler`
+- `/content/json-only` - `ContentJSONOnlyHandler`
+- `/content/size-limit` - `ContentSizeLimitHandler`
+- `/content/referrer-check` - `ContentReferrerHandler`
+- `/content/custom-validation` - `ContentCustomValidationHandler`
 
 ```python
 class ContentJSONOnlyHandler(JSONHandler):
@@ -276,10 +276,10 @@ ___
 Advanced Handler Group (`/advanced/*`)
 --------------------------------------
 
-- `/advanced/business-hours` — `AdvancedBusinessHoursHandler`
-- `/advanced/weekend-only` — `AdvancedWeekendHandler`
-- `/advanced/honeypot` — `AdvancedHoneypotHandler`
-- `/advanced/suspicious-patterns` — `AdvancedSuspiciousHandler`
+- `/advanced/business-hours` - `AdvancedBusinessHoursHandler`
+- `/advanced/weekend-only` - `AdvancedWeekendHandler`
+- `/advanced/honeypot` - `AdvancedHoneypotHandler`
+- `/advanced/suspicious-patterns` - `AdvancedSuspiciousHandler`
 
 ```python
 class AdvancedBusinessHoursHandler(JSONHandler):
@@ -295,11 +295,11 @@ Admin Handler Group (`/admin/*`)
 
 All admin endpoints are locked to `127.0.0.1` via `@guard_decorator.require_ip(whitelist=["127.0.0.1"])`.
 
-- `/admin/unban-ip` — `AdminUnbanHandler`
-- `/admin/stats` — `AdminStatsHandler`
-- `/admin/clear-cache` — `AdminClearCacheHandler`
-- `/admin/emergency-mode` — `AdminEmergencyModeHandler`
-- `/admin/cloud-status` — `AdminCloudStatusHandler`
+- `/admin/unban-ip` - `AdminUnbanHandler`
+- `/admin/stats` - `AdminStatsHandler`
+- `/admin/clear-cache` - `AdminClearCacheHandler`
+- `/admin/emergency-mode` - `AdminEmergencyModeHandler`
+- `/admin/cloud-status` - `AdminCloudStatusHandler`
 
 ```python
 class AdminStatsHandler(JSONHandler):
@@ -315,11 +315,11 @@ Test Handler Group (`/test/*`)
 
 Endpoints used to feed payloads through the penetration-detection pipeline.
 
-- `/test/xss-test` — `TestXSSHandler`
-- `/test/sql-injection` — `TestSQLHandler`
-- `/test/path-traversal/<path>` — `TestPathTraversalHandler`
-- `/test/command-injection` — `TestCommandInjectionHandler`
-- `/test/mixed-attack` — `TestMixedAttackHandler`
+- `/test/xss-test` - `TestXSSHandler`
+- `/test/sql-injection` - `TestSQLHandler`
+- `/test/path-traversal/<path>` - `TestPathTraversalHandler`
+- `/test/command-injection` - `TestCommandInjectionHandler`
+- `/test/mixed-attack` - `TestMixedAttackHandler`
 
 ```python
 class TestSQLHandler(JSONHandler):

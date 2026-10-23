@@ -198,7 +198,7 @@ class AgentHealthHandler(tornado.web.RequestHandler):
 #  "transport_stats": {"circuit_breaker_state": "CLOSED", ...}}
 ```
 
-When the agent is disabled or failed to initialize, the property returns `{"enabled": False}`. Read it on each scrape — it reflects live counters and is not cached.
+When the agent is disabled or failed to initialize, the property returns `{"enabled": False}`. Read it on each scrape - it reflects live counters and is not cached.
 
 ### Wiring the package version through to the agent
 

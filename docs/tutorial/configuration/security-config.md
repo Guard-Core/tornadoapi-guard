@@ -8,7 +8,7 @@ keywords: security config, configuration, settings, tornadoapi-guard
 Security Configuration
 ======================
 
-TornadoAPI Guard configuration is provided by `SecurityConfig`, a Pydantic `BaseModel` re-exported from [guard-core](https://github.com/Guard-Core/guard-core). Every security feature — IP control, rate limiting, behavioral analysis, security headers, Redis, agent telemetry, and the detection engine — is driven by fields on this model.
+TornadoAPI Guard configuration is provided by `SecurityConfig`, a Pydantic `BaseModel` re-exported from [guard-core](https://github.com/Guard-Core/guard-core). Every security feature - IP control, rate limiting, behavioral analysis, security headers, Redis, agent telemetry, and the detection engine - is driven by fields on this model.
 
 ___
 
@@ -25,7 +25,7 @@ config = SecurityConfig(
 )
 ```
 
-`SecurityConfig` is a plain Pydantic model. It does **not** read environment variables automatically — wire up your own loader (e.g. `os.getenv`, `pydantic-settings`, or your framework's config module) if you need env-driven configuration.
+`SecurityConfig` is a plain Pydantic model. It does **not** read environment variables automatically - wire up your own loader (e.g. `os.getenv`, `pydantic-settings`, or your framework's config module) if you need env-driven configuration.
 
 ___
 
@@ -34,7 +34,7 @@ Core Security Settings
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `passive_mode` | bool | False | Log-only mode — detect without blocking |
+| `passive_mode` | bool | False | Log-only mode - detect without blocking |
 | `enable_ip_banning` | bool | True | Enable automatic and manual IP banning |
 | `enable_rate_limiting` | bool | True | Enable rate limiting |
 | `enable_penetration_detection` | bool | True | Enable penetration attempt detection |
@@ -110,14 +110,14 @@ Detection Engine Settings
 
 | Field | Type | Default | Range | Description |
 |-------|------|---------|-------|-------------|
-| `detection_compiler_timeout` | float | 2.0 | 0.1–10.0 | Pattern compilation/execution timeout (seconds) |
-| `detection_max_content_length` | int | 10000 | 1000–100000 | Maximum content length analyzed per request |
-| `detection_preserve_attack_patterns` | bool | True | — | Preserve known attack patterns during truncation |
-| `detection_semantic_threshold` | float | 0.7 | 0.0–1.0 | Minimum threat score for semantic detection |
-| `detection_anomaly_threshold` | float | 3.0 | 1.0–10.0 | Standard deviations from mean to flag anomaly |
-| `detection_slow_pattern_threshold` | float | 0.1 | 0.01–1.0 | Execution time to flag a pattern as slow (seconds) |
-| `detection_monitor_history_size` | int | 1000 | 100–10000 | Number of performance metrics kept in history |
-| `detection_max_tracked_patterns` | int | 1000 | 100–5000 | Maximum patterns tracked for performance stats |
+| `detection_compiler_timeout` | float | 2.0 | 0.1-10.0 | Pattern compilation/execution timeout (seconds) |
+| `detection_max_content_length` | int | 10000 | 1000-100000 | Maximum content length analyzed per request |
+| `detection_preserve_attack_patterns` | bool | True | - | Preserve known attack patterns during truncation |
+| `detection_semantic_threshold` | float | 0.7 | 0.0-1.0 | Minimum threat score for semantic detection |
+| `detection_anomaly_threshold` | float | 3.0 | 1.0-10.0 | Standard deviations from mean to flag anomaly |
+| `detection_slow_pattern_threshold` | float | 0.1 | 0.01-1.0 | Execution time to flag a pattern as slow (seconds) |
+| `detection_monitor_history_size` | int | 1000 | 100-10000 | Number of performance metrics kept in history |
+| `detection_max_tracked_patterns` | int | 1000 | 100-5000 | Maximum patterns tracked for performance stats |
 
 See the full [Detection Engine Configuration Guide](../security/detection-engine/configuration.md) for tuning details.
 
@@ -183,7 +183,7 @@ Emergency Mode
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `emergency_mode` | bool | False | Lockdown — block all requests except those on `emergency_whitelist` |
+| `emergency_mode` | bool | False | Lockdown - block all requests except those on `emergency_whitelist` |
 | `emergency_whitelist` | list[str] | `[]` | IPs allowed during emergency mode |
 
 Emergency mode is typically toggled at runtime through dynamic rules, but can also be set at construction for drills.
@@ -345,7 +345,7 @@ ___
 Environment Variables
 ---------------------
 
-`SecurityConfig` itself does not read environment variables — guard-core does not ship a `BaseSettings` subclass. Users who want env-driven configuration can wrap it:
+`SecurityConfig` itself does not read environment variables - guard-core does not ship a `BaseSettings` subclass. Users who want env-driven configuration can wrap it:
 
 ```python
 import os
@@ -371,9 +371,9 @@ ___
 See Also
 --------
 
-- [SecurityMiddleware](../../api/security-middleware.md) — how to register the config with a Tornado Application
-- [SecurityHandler](../../api/security-handler.md) — base handler that runs the guard pipeline
-- [Adapters API](../../api/adapters.md) — custom request/response hook examples
-- [Detection Engine Configuration](../security/detection-engine/configuration.md) — detection engine tuning
-- [Logging Configuration](logging.md) — log formatting and handlers
-- [CORS Configuration](cors.md) — CORS handling in Tornado
+- [SecurityMiddleware](../../api/security-middleware.md) - how to register the config with a Tornado Application
+- [SecurityHandler](../../api/security-handler.md) - base handler that runs the guard pipeline
+- [Adapters API](../../api/adapters.md) - custom request/response hook examples
+- [Detection Engine Configuration](../security/detection-engine/configuration.md) - detection engine tuning
+- [Logging Configuration](logging.md) - log formatting and handlers
+- [CORS Configuration](cors.md) - CORS handling in Tornado

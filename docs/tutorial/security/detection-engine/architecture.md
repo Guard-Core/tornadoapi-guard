@@ -106,7 +106,7 @@ def _ensure_detection_components(self) -> None:
 if self.config.enable_penetration_detection:
     result = await detect_penetration_attempt(request)
     if result.is_threat:
-        # Handle detected attack — result.trigger_info, result.threat_categories
+        # Handle detected attack - result.trigger_info, result.threat_categories
 ```
 
 ### 2. Content Extraction
@@ -265,7 +265,7 @@ flowchart LR
 
 ### Pattern Engine Result Structure (`SusPatternsManager.detect()`)
 
-The internal pattern engine returns this dict shape from `SusPatternsManager.detect()`. The pipeline-level `detect_penetration_attempt()` wraps it and returns a `DetectionResult` dataclass (`is_threat`, `trigger_info`, `threat_categories`, `threat_scores`) — see the [Utilities API reference](../../../api/utilities.md). Most application code consumes the outer `DetectionResult`; the dict below is for code that calls the engine directly.
+The internal pattern engine returns this dict shape from `SusPatternsManager.detect()`. The pipeline-level `detect_penetration_attempt()` wraps it and returns a `DetectionResult` dataclass (`is_threat`, `trigger_info`, `threat_categories`, `threat_scores`) - see the [Utilities API reference](../../../api/utilities.md). Most application code consumes the outer `DetectionResult`; the dict below is for code that calls the engine directly.
 
 ```python
 {

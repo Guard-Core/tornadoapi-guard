@@ -22,7 +22,7 @@ from tornadoapi_guard import (
 )
 ```
 
-Most users never touch these classes directly — `SecurityMiddleware` builds them under the hood. You do need them when writing a `custom_request_check`, a `custom_response_modifier`, or a custom validator that needs to return a typed response.
+Most users never touch these classes directly - `SecurityMiddleware` builds them under the hood. You do need them when writing a `custom_request_check`, a `custom_response_modifier`, or a custom validator that needs to return a typed response.
 
 ___
 
@@ -47,10 +47,10 @@ TornadoGuardRequest Properties
 | `url_scheme` | `str` | `handler.request.protocol` (for example `"http"` or `"https"`) |
 | `url_full` | `str` | `handler.request.full_url()` |
 | `method` | `str` | HTTP method, defaulting to `"GET"` if Tornado reports `None` |
-| `client_host` | `str \| None` | `handler.request.remote_ip` — the IP that Tornado resolved for the peer |
+| `client_host` | `str \| None` | `handler.request.remote_ip` - the IP that Tornado resolved for the peer |
 | `headers` | `Mapping[str, str]` | Case-insensitive header mapping (Tornado's `HTTPHeaders`) |
 | `query_params` | `Mapping[str, str]` | Query-string decoded to `str` values; repeated keys collapse to the first value |
-| `state` | `SimpleNamespace` | Per-handler state container — see [Per-handler state](#per-handler-state) below |
+| `state` | `SimpleNamespace` | Per-handler state container - see [Per-handler state](#per-handler-state) below |
 | `scope` | `dict[str, Any]` | Dict exposing `handler`, `app`, `application`, `settings`, `path`, and `method`; compatible with guard-core code that inspects `scope.get("app")` |
 
 ___
@@ -68,7 +68,7 @@ Returns a rebuilt URL with the given scheme swapped in (useful for HTTPS enforce
 async def body(self) -> bytes: ...
 ```
 
-Returns the raw request body. Tornado already buffers the body on the request object, so this is effectively synchronous from an IO perspective — the `async` signature exists to match the `GuardRequest` protocol, which is shared with ASGI adapters where body access is genuinely async.
+Returns the raw request body. Tornado already buffers the body on the request object, so this is effectively synchronous from an IO perspective - the `async` signature exists to match the `GuardRequest` protocol, which is shared with ASGI adapters where body access is genuinely async.
 
 ___
 
@@ -85,7 +85,7 @@ class TornadoGuardResponse:
     ) -> None: ...
 ```
 
-A standalone, framework-agnostic response snapshot. Implements the `GuardResponse` protocol. Unlike FastAPI, Tornado does not have a first-class response object — responses are written incrementally via `handler.write()` / `handler.set_header()` / `handler.finish()`. `TornadoGuardResponse` bridges that gap by providing a single container that guard-core can inspect and modify.
+A standalone, framework-agnostic response snapshot. Implements the `GuardResponse` protocol. Unlike FastAPI, Tornado does not have a first-class response object - responses are written incrementally via `handler.write()` / `handler.set_header()` / `handler.finish()`. `TornadoGuardResponse` bridges that gap by providing a single container that guard-core can inspect and modify.
 
 ___
 
@@ -152,11 +152,11 @@ def apply_guard_response(
 
 Writes a `GuardResponse` back through a Tornado `RequestHandler`. The procedure is:
 
-1. `handler.clear()` — discard any previously buffered output.
-2. `handler.set_status(guard_response.status_code)` — set the status line.
+1. `handler.clear()` - discard any previously buffered output.
+2. `handler.set_status(guard_response.status_code)` - set the status line.
 3. `handler.set_header(key, value)` for every entry in `guard_response.headers`.
 4. `handler.write(body)` if a body was provided.
-5. `handler.finish()` — terminate the request.
+5. `handler.finish()` - terminate the request.
 
 `SecurityHandler.prepare` calls this helper when the security pipeline returns a blocking response, and you may call it yourself from a custom validator if you construct a `TornadoGuardResponse` and want to write it out immediately.
 
@@ -178,7 +178,7 @@ Writing Custom Hooks
 
 `SecurityConfig` accepts two user-provided callables:
 
-- `custom_request_check(request)` — runs at the end of the security pipeline. Return a `GuardResponse` to short-circuit the request, or `None` to let it through.
+- `custom_request_check(request)` - runs at the end of the security pipeline. Return a `GuardResponse` to short-circuit the request, or `None` to let it through.
 - `custom_response_modifier(response)` - runs during the response pass in `SecurityHandler.finish()`, before the response is flushed. Receives the response built from the handler (and the pipeline's own blocking responses) and may mutate its headers (or construct a new response); the status, header and body changes reach the client.
 
 Use `TornadoGuardResponse` for return values so that `SecurityMiddleware` can apply headers, CORS, and the custom modifier uniformly. The pattern below mirrors `examples/simple_app/main.py`:
@@ -218,7 +218,7 @@ config = SecurityConfig(
 
 A few notes:
 
-- Inside `custom_request_check` you can read the request through the `GuardRequest` protocol (`request.query_params`, `request.headers`, `request.client_host`, `await request.body()`). You do **not** need to know that the concrete type is `TornadoGuardRequest` — stick to the protocol and the same hook will work against any guard-core adapter.
+- Inside `custom_request_check` you can read the request through the `GuardRequest` protocol (`request.query_params`, `request.headers`, `request.client_host`, `await request.body()`). You do **not** need to know that the concrete type is `TornadoGuardRequest` - stick to the protocol and the same hook will work against any guard-core adapter.
 - Inside `custom_response_modifier` you receive a `GuardResponse` (concretely a `TornadoGuardResponse` when running under `tornadoapi-guard`). Mutating `response.headers` is safe because the mapping is declared `MutableMapping[str, str]` in the protocol.
 - If you need a typed `TornadoGuardResponse` from an unknown `GuardResponse`, call `unwrap_response(response)`.
 
@@ -243,7 +243,7 @@ def get_guard_state(handler: RequestHandler) -> SimpleNamespace:
     return state
 ```
 
-The `WeakKeyDictionary` is an implementation detail — do not rely on it. What you should know:
+The `WeakKeyDictionary` is an implementation detail - do not rely on it. What you should know:
 
 - State is scoped to a **single handler instance**, which in Tornado means a single request.
 - The entry is cleaned up automatically when the handler is garbage-collected at the end of the request.
@@ -257,7 +257,7 @@ ___
 See Also
 --------
 
-- [SecurityHandler](security-handler.md) — the base class that invokes the middleware through the adapters.
-- [SecurityMiddleware](security-middleware.md) — orchestrates the adapters and the security pipeline.
-- [Core Architecture](core-architecture.md) — details on the guard-core protocols these adapters implement.
-- [API Overview](overview.md) — complete API reference.
+- [SecurityHandler](security-handler.md) - the base class that invokes the middleware through the adapters.
+- [SecurityMiddleware](security-middleware.md) - orchestrates the adapters and the security pipeline.
+- [Core Architecture](core-architecture.md) - details on the guard-core protocols these adapters implement.
+- [API Overview](overview.md) - complete API reference.

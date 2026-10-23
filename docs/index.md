@@ -127,7 +127,7 @@ docker run --host 0.0.0.0 -p 8000:8000 \
  ghcr.io/guard-core/tornadoapi-guard-example:latest
 ```
 
-The example app includes endpoints that exercise the various security features of TornadoAPI Guard. Because Tornado does not generate OpenAPI documentation automatically, there is no `/docs` UI — see `examples/simple_app/main.py` and the [Example App tutorial](tutorial/examples/example-app.md) for the list of endpoints and their purposes.
+The example app includes endpoints that exercise the various security features of TornadoAPI Guard. Because Tornado does not generate OpenAPI documentation automatically, there is no `/docs` UI - see `examples/simple_app/main.py` and the [Example App tutorial](tutorial/examples/example-app.md) for the list of endpoints and their purposes.
 
 ___
 

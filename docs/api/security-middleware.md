@@ -24,9 +24,9 @@ class SecurityMiddleware:
 
 **Arguments:**
 
-- `config` — a `SecurityConfig` instance (keyword-only). Required.
+- `config` - a `SecurityConfig` instance (keyword-only). Required.
 
-The constructor builds all internal components (rate limit handler, response factory, event bus, metrics collector, route resolver, request validator, behavioral processor, etc.) but does **not** start Redis connections or cloud IP refreshes — that work happens asynchronously in `initialize()`.
+The constructor builds all internal components (rate limit handler, response factory, event bus, metrics collector, route resolver, request validator, behavioral processor, etc.) but does **not** start Redis connections or cloud IP refreshes - that work happens asynchronously in `initialize()`.
 
 ___
 
@@ -73,14 +73,14 @@ Core Components
 
 The middleware delegates to these specialized modules (all imported from `guard_core`):
 
-- **SecurityCheckPipeline** — executes security checks in sequence
-- **SecurityEventBus** — dispatches security events to the monitoring agent
-- **MetricsCollector** — collects request/response metrics
-- **HandlerInitializer** — initializes Redis and Agent handlers
-- **ErrorResponseFactory** — creates and processes responses
-- **RouteConfigResolver** — resolves decorator configurations for a request
-- **RequestValidator** — validates request properties
-- **BehavioralProcessor** — processes behavioral rules
+- **SecurityCheckPipeline** - executes security checks in sequence
+- **SecurityEventBus** - dispatches security events to the monitoring agent
+- **MetricsCollector** - collects request/response metrics
+- **HandlerInitializer** - initializes Redis and Agent handlers
+- **ErrorResponseFactory** - creates and processes responses
+- **RouteConfigResolver** - resolves decorator configurations for a request
+- **RequestValidator** - validates request properties
+- **BehavioralProcessor** - processes behavioral rules
 
 ___
 

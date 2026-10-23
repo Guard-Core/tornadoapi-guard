@@ -21,7 +21,7 @@ The generated headers include:
 
 Each of these is derived from the matching field on `SecurityConfig` (`cors_allow_origins`, `cors_allow_methods`, `cors_allow_headers`, `cors_allow_credentials`, `cors_expose_headers`, `cors_max_age`).
 
-Because the Tornado middleware has no `app.add_middleware(...)` equivalent, there is no `SecurityMiddleware.configure_cors(app, config)` helper — setting the fields on `SecurityConfig` is all you need.
+Because the Tornado middleware has no `app.add_middleware(...)` equivalent, there is no `SecurityMiddleware.configure_cors(app, config)` helper - setting the fields on `SecurityConfig` is all you need.
 
 ___
 
@@ -121,7 +121,7 @@ ___
 Preflight (OPTIONS) Requests
 ----------------------------
 
-Tornado's `RequestHandler.options()` returns an empty `200 OK` by default. When a preflight arrives, `SecurityHandler.prepare()` runs first and the CORS headers derived from your config are already attached — which is enough for most use cases.
+Tornado's `RequestHandler.options()` returns an empty `200 OK` by default. When a preflight arrives, `SecurityHandler.prepare()` runs first and the CORS headers derived from your config are already attached - which is enough for most use cases.
 
 If you need custom preflight behavior (for example, to return extra headers or a specific body on `OPTIONS`), override `options()` on your `SecurityHandler` subclass:
 
@@ -138,7 +138,7 @@ class APIHandler(SecurityHandler):
         self.write({"data": "value"})
 ```
 
-The CORS headers configured via `SecurityConfig` are still applied automatically — you only need to override `options()` when the default behavior is insufficient.
+The CORS headers configured via `SecurityConfig` are still applied automatically - you only need to override `options()` when the default behavior is insufficient.
 
 ___
 

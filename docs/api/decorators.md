@@ -10,7 +10,7 @@ Security Decorators
 
 The decorators module provides route-level security controls that can be applied to individual Tornado handler methods. These decorators offer fine-grained control over security policies on a per-route basis, complementing the global `SecurityMiddleware` security features.
 
-The decorator implementation lives in `guard_core` and is re-exported through `tornadoapi_guard`. The API surface is identical to `fastapi-guard` — only the application pattern differs, since Tornado dispatches to handler methods instead of plain route functions.
+The decorator implementation lives in `guard_core` and is re-exported through `tornadoapi_guard`. The API surface is identical to `fastapi-guard` - only the application pattern differs, since Tornado dispatches to handler methods instead of plain route functions.
 
 ___
 
@@ -262,9 +262,9 @@ Integration with Middleware
 
 The decorators work in conjunction with `SecurityMiddleware` to provide comprehensive protection:
 
-1. **Route Configuration** — decorators attach metadata onto the handler method
-2. **Middleware Processing** — `SecurityMiddleware.run_pre_processing()` reads that metadata and applies the corresponding checks
-3. **Override Behavior** — route-specific settings override global middleware settings for the matched handler
+1. **Route Configuration** - decorators attach metadata onto the handler method
+2. **Middleware Processing** - `SecurityMiddleware.run_pre_processing()` reads that metadata and applies the corresponding checks
+3. **Override Behavior** - route-specific settings override global middleware settings for the matched handler
 
 **Example Integration:**
 

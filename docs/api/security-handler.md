@@ -173,7 +173,7 @@ Degraded Mode
 
 If a handler inherits from `SecurityHandler` but the `Application` does **not** have a `security_middleware` entry in its settings (for example, in a unit test, a minimal sandbox, or during local development without the full middleware stack), `_get_security_middleware()` returns `None` and both hooks short-circuit:
 
-- `prepare()` returns immediately — no headers are injected, no pipeline runs.
+- `prepare()` returns immediately - no headers are injected, no pipeline runs.
 - `finish()` finishes the response immediately - no response pass runs.
 
 In this degraded state `SecurityHandler` behaves exactly like a plain `tornado.web.RequestHandler`. This is intentional: it lets you write test fixtures that instantiate handlers without having to stand up a full `SecurityMiddleware` and its Redis/agent dependencies. Just remember that **no security checks are being performed** when the middleware is absent.
@@ -183,7 +183,7 @@ ___
 See Also
 --------
 
-- [SecurityMiddleware](security-middleware.md) — the orchestration layer that `SecurityHandler` delegates to.
-- [Adapters](adapters.md) — `TornadoGuardRequest` / `TornadoGuardResponse` and `apply_guard_response()`.
-- [SecurityDecorators](decorators.md) — route-level security via decorators on handler methods.
-- [API Overview](overview.md) — complete API reference.
+- [SecurityMiddleware](security-middleware.md) - the orchestration layer that `SecurityHandler` delegates to.
+- [Adapters](adapters.md) - `TornadoGuardRequest` / `TornadoGuardResponse` and `apply_guard_response()`.
+- [SecurityDecorators](decorators.md) - route-level security via decorators on handler methods.
+- [API Overview](overview.md) - complete API reference.
