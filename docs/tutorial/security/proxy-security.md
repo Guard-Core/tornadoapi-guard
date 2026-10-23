@@ -50,6 +50,16 @@ How It Works
 
 ___
 
+Prerequisite: Do Not Enable `xheaders` Without Aligning It
+----------------------------------------------------------
+
+TornadoAPI Guard reads the connecting IP from `request.remote_ip`. When Tornado's `HTTPServer` runs with `xheaders=True`, Tornado rewrites `request.remote_ip` from the `X-Real-Ip` header (which takes precedence) or from the right-most `X-Forwarded-For` value that is not listed in `trusted_downstream`, before the request reaches TornadoAPI Guard.
+
+!!! warning "`xheaders=True` lets a client choose its own identity"
+    With `xheaders=True` and no proxy that overwrites those headers, a client sends its own `X-Real-Ip` or `X-Forwarded-For` and Tornado makes it the connecting IP, so rate limits, bans and every other check see a new identity on each request. Keep `xheaders=False` (the default) and let `trusted_proxies` and `trusted_proxy_depth` resolve the client. If you do enable `xheaders`, set `trusted_downstream` to the same addresses you list in `trusted_proxies`, make your proxy overwrite `X-Real-Ip`, and do not rely on `trusted_proxies` for the same hops.
+
+___
+
 Configuration Options
 ---------------------
 
