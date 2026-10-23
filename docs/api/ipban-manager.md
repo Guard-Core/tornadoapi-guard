@@ -34,12 +34,14 @@ When Redis is enabled:
 - Ban expiration is handled automatically
 - Supports atomic ban operations
 
-```python
-# Cluster-wide ban
-await ip_ban_manager.ban_ip("192.168.1.1", 3600, distributed=True)
+There is no per-call switch: `ban_ip` and `is_ip_banned` take no distributed or Redis argument. With Redis enabled in the `SecurityConfig`, the same calls store the ban in Redis and read it back from there.
 
-# Check ban status across cluster
-is_banned = await ip_ban_manager.is_ip_banned("192.168.1.1", check_redis=True)
+```python
+# Ban the IP; with Redis enabled the ban is stored there for every instance
+await ip_ban_manager.ban_ip("192.168.1.1", 3600)
+
+# Check the ban; the lookup consults Redis as well as the local cache
+is_banned = await ip_ban_manager.is_ip_banned("192.168.1.1")
 ```
 
 ___
@@ -53,13 +55,25 @@ ban_ip
 Ban an IP address for a specified duration.
 
 ```python
-async def ban_ip(ip: str, duration: int) -> None
+async def ban_ip(
+    ip: str,
+    duration: int,
+    reason: str = "threshold_exceeded",
+    *,
+    grouped: bool = False,
+) -> bool
 ```
 
 **Parameters**:
 
 - `ip`: The IP address to ban
 - `duration`: Ban duration in seconds
+- `reason`: The reason recorded with the ban
+- `grouped`: Ban `ip` as a group identity, such as the IPv6 prefix `2001:db8::/64`, instead of one exact address
+
+**Returns**:
+
+- `bool`: True if the ban was applied, False if it was refused
 
 **Example**:
 
