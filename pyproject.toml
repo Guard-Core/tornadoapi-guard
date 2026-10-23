@@ -47,10 +47,20 @@ Changelog = "https://github.com/Guard-Core/tornadoapi-guard/blob/master/CHANGELO
 "Bug Tracker" = "https://github.com/Guard-Core/tornadoapi-guard/issues"
 
 [project.optional-dependencies]
+redis = [
+    "guard-core[redis]",
+]
+geo = [
+    "guard-core[geo]",
+]
+cloud = [
+    "guard-core[cloud]",
+]
 dev = [
     "bandit[toml]",
     "deptry",
     "guard-agent",
+    "guard-core[cloud,geo,redis]",
     "httpx",
     "mkdocs",
     "mkdocstrings",
