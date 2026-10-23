@@ -35,19 +35,19 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
-          python-version: 3.x
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
-          pip install mkdocs-material
-          pip install "mkdocstrings[python]"
-          pip install mike
-          pip install pymarkdownlnt
-          pip install -e .
+          pip install uv
+          uv sync --extra dev
+
+      - name: Build documentation
+        run: uv run mkdocs build --strict
 
       - name: Lint documentation
         run: |
-          pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests .
+          uv run pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests .
 
       - name: Configure Git user
         run: |
@@ -56,10 +56,10 @@ jobs:
 
       - name: Deploy documentation
         run: |
-          mike deploy --push latest
-          mike set-default --push latest
+          uv run mike deploy --push latest
+          uv run mike set-default --push latest
 
       - name: Deploy to GitHub Pages
         run: |
-          mike list
+          uv run mike list
           git push origin gh-pages --force
