@@ -58,7 +58,7 @@ ROUTES: list[tuple[str, type[tornado.web.RequestHandler]]] = [
 async def serve() -> AsyncGenerator[Callable[[dict[str, tuple[int, int]]], Any], None]:
     started: list[tuple[tornado.httpserver.HTTPServer, SecurityMiddleware]] = []
 
-    async def start(limits: dict[str, tuple[int, int]]) -> Any:
+    async def start(limits: dict[str, tuple[int, int]], **config_options: Any) -> Any:
         config = SecurityConfig(
             enable_redis=False,
             enable_penetration_detection=False,
@@ -66,6 +66,7 @@ async def serve() -> AsyncGenerator[Callable[[dict[str, tuple[int, int]]], Any],
             rate_limit=1000,
             endpoint_rate_limits=limits,
             passive_mode=False,
+            **config_options,
         )
         middleware = SecurityMiddleware(config=config)
         app = tornado.web.Application(ROUTES, security_middleware=middleware)
@@ -140,9 +141,16 @@ async def test_login_and_login_slash_keys_are_both_enforced(serve: Any) -> None:
 async def test_key_the_router_cannot_resolve_still_limits_through_the_fallback(
     serve: Any,
 ) -> None:
-    port, _ = await serve({"//login/.": (1, 60)})
+    port, _ = await serve({"//login/.": (1, 60)}, fail_on_misconfiguration=False)
 
     assert await _statuses(port, ["/login", "/login"]) == [200, 429]
+
+
+async def test_key_the_router_cannot_resolve_refuses_to_start_by_default(
+    serve: Any,
+) -> None:
+    with pytest.raises(ValueError, match="has a dot segment"):
+        await serve({"//login/.": (1, 60)})
 
 
 async def test_resolve_route_reports_each_defined_method_with_decoded_params(
