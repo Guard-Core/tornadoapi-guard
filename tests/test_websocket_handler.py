@@ -79,6 +79,7 @@ async def _verdicts(
                 HTTPRequest(f"ws://127.0.0.1:{port}/ws", headers=headers)
             )
             message = await connection.read_message()
+            assert isinstance(message, str)
             connection.close()
             ws = f"accepted:{message}"
         except HTTPClientError as exc:

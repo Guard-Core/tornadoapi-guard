@@ -399,7 +399,7 @@ async def test_refresh_cloud_ip_ranges_no_providers(
 async def test_refresh_cloud_ip_ranges_sync_path(
     simple_middleware: SecurityMiddleware,
 ) -> None:
-    simple_middleware.config.block_cloud_providers = {"AWS"}
+    simple_middleware.config.block_cloud_providers = frozenset({"AWS"})
     with patch.object(cloud_handler, "refresh", new=AsyncMock()) as mock_refresh:
         await simple_middleware.refresh_cloud_ip_ranges()
         mock_refresh.assert_awaited_once()

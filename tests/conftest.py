@@ -9,7 +9,8 @@ from guard_core.handlers.cloud_handler import cloud_handler
 from guard_core.handlers.ipban_handler import reset_global_state
 from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.ratelimit_handler import (
-    RateLimitManager,
+    _managers,
+    _managers_lock,
     rate_limit_handler,
 )
 from guard_core.handlers.security_headers_handler import security_headers_manager
@@ -75,7 +76,8 @@ async def reset_state() -> AsyncGenerator[None, None]:
             IPInfoManager._instance.reader.close()
         IPInfoManager._instance = None
 
-    RateLimitManager._instance = None
+    with _managers_lock:
+        _managers.clear()
 
     yield
     sus_patterns_handler.patterns = original_patterns.copy()

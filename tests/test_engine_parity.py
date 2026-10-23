@@ -48,7 +48,7 @@ class OpenHandler(SecurityHandler):
 
 class NoClientHandler(SecurityHandler):
     async def prepare(self) -> None:
-        self.request.remote_ip = None  # type: ignore[assignment]
+        self.request.remote_ip = None
         await super().prepare()
 
     async def get(self) -> None:
@@ -126,7 +126,9 @@ ServerFactory = Callable[..., Awaitable[Server]]
 
 
 @pytest.fixture
-async def serve() -> AsyncGenerator[ServerFactory, None]:
+async def serve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> AsyncGenerator[ServerFactory, None]:
     started: list[tuple[tornado.httpserver.HTTPServer, SecurityMiddleware]] = []
 
     async def _serve(**overrides: Any) -> Server:
@@ -166,7 +168,9 @@ async def serve() -> AsyncGenerator[ServerFactory, None]:
             metrics.append(request.url_path)
             await real(request, response_time, status_code)
 
-        middleware.metrics_collector.collect_request_metrics = spy  # type: ignore[method-assign]
+        monkeypatch.setattr(
+            middleware.metrics_collector, "collect_request_metrics", spy
+        )
         await middleware.initialize()
         sockets = tornado.netutil.bind_sockets(0, "127.0.0.1")
         server = tornado.httpserver.HTTPServer(app)
@@ -443,14 +447,14 @@ async def test_response_modifier_can_remove_a_header(serve: ServerFactory) -> No
 
 
 async def test_response_pass_failure_still_finishes_the_response(
-    serve: ServerFactory,
+    serve: ServerFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     srv = await serve()
 
     async def boom(_handler: Any) -> None:
         raise RuntimeError("boom")
 
-    srv.middleware.run_post_processing = boom  # type: ignore[method-assign]
+    monkeypatch.setattr(srv.middleware, "run_post_processing", boom)
 
     resp = await srv.get("/open")
 

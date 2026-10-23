@@ -81,6 +81,7 @@ async def test_the_check_is_in_every_pipeline_for_the_refusal_event() -> None:
     try:
         assert off.security_pipeline is not None and on.security_pipeline is not None
         for middleware in (off, on):
+            assert middleware.security_pipeline is not None
             assert "cors_preflight" in [
                 c.check_name for c in middleware.security_pipeline.checks
             ]
