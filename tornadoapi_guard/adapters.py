@@ -92,12 +92,16 @@ class TornadoGuardRequest:
 
 
 class TornadoGuardResponse:
+    body_is_materialized: bool
+
     def __init__(
         self,
         status_code: int,
         headers: MutableMapping[str, str] | None = None,
         body: bytes | None = None,
+        body_is_materialized: bool = True,
     ) -> None:
+        self.body_is_materialized = body_is_materialized
         self._status_code = status_code
         self._headers: MutableMapping[str, str] = headers if headers is not None else {}
         self._body = body
@@ -133,6 +137,9 @@ class TornadoGuardResponse:
             status_code=handler.get_status(),
             headers=headers,
             body=body,
+            # once the headers went out (flush), the earlier chunks are with the
+            # client and the buffer holds only what is left of the body
+            body_is_materialized=not getattr(handler, "_headers_written", False),
         )
 
 
