@@ -207,7 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 # UV
-uv.lock
 
 # Redis
 data/
