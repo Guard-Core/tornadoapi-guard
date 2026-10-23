@@ -79,6 +79,9 @@ dev = [
 ]
 
 [dependency-groups]
+release = [
+    "build",
+]
 docs = [
     "mike",
     "mkdocs",
@@ -291,6 +294,7 @@ per_rule_ignores = { "DEP001" = [
     "mkdocstrings-python",
     "mike",
     "mkdocs-material",
+    "build",
     "mypy",
     "pip-audit",
     "pre-commit",
