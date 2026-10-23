@@ -32,7 +32,7 @@ from tornadoapi_guard.adapters import (
 from tornadoapi_guard.handler import SecurityHandler, SecurityWebSocketHandler
 from tornadoapi_guard.middleware import SecurityMiddleware
 
-register_adapter("tornadoapi-guard", "async")
+register_adapter("tornadoapi-guard")
 
 if TYPE_CHECKING:
     from guard_core import (
