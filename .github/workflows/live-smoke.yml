@@ -53,7 +53,7 @@ jobs:
         run: |
           rm -rf live_smoke_stack
           cp -r examples/simple_app live_smoke_stack
-          wheel=$(find examples/live_smoke_wheels -name "tornadoapi_guard-*.whl" | head -n 1)
+          wheel=$(find examples/live_smoke_wheels -maxdepth 1 -name 'tornadoapi_guard-*.whl' | head -n 1)
           cp "$wheel" live_smoke_stack/
           # Install the wheel from this checkout instead of the PyPI release;
           # the wheel must be COPYed into the image before pip runs

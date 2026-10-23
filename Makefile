@@ -218,19 +218,19 @@ test-3.14:
 # Serve docs
 .PHONY: serve-docs
 serve-docs:
-	@uv run mkdocs serve
+	@UV_PROJECT_ENVIRONMENT=.venv/docs uv run --python 3.14 --extra dev --group docs mkdocs serve
 	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
 
 # Lint documentation
 .PHONY: lint-docs
 lint-docs:
-	@uv run pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests -e ./.claude -e ./CLAUDE.md -e ./.cursor -e ./.kiro -e ./ZZZ .
+	@uv run --group docs pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests -e ./.claude -e ./CLAUDE.md -e ./.cursor -e ./.kiro -e ./ZZZ .
 	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
 
 # Fix documentation
 .PHONY: fix-docs
 fix-docs:
-	@uv run pymarkdownlnt fix -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests -e ./.claude -e ./CLAUDE.md -e ./.cursor -e ./.kiro -e ./ZZZ .
+	@uv run --group docs pymarkdownlnt fix -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests -e ./.claude -e ./CLAUDE.md -e ./.cursor -e ./.kiro -e ./ZZZ .
 	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
 
 # Prune

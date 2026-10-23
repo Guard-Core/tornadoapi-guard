@@ -35,19 +35,19 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.10'
+          python-version: '3.14'
 
       - name: Install dependencies
         run: |
           pip install uv
-          uv sync --extra dev
+          uv sync --locked --python 3.14 --extra dev --group docs
 
       - name: Build documentation
-        run: uv run mkdocs build --strict
+        run: uv run --no-sync mkdocs build --strict
 
       - name: Lint documentation
         run: |
-          uv run pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests .
+          uv run --no-sync pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./tornadoapi_guard -e ./tests .
 
       - name: Configure Git user
         run: |
@@ -56,10 +56,10 @@ jobs:
 
       - name: Deploy documentation
         run: |
-          uv run mike deploy --push latest
-          uv run mike set-default --push latest
+          uv run --no-sync mike deploy --push latest
+          uv run --no-sync mike set-default --push latest
 
       - name: Deploy to GitHub Pages
         run: |
-          uv run mike list
+          uv run --no-sync mike list
           git push origin gh-pages --force
