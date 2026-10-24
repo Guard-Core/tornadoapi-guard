@@ -24,7 +24,7 @@ TornadoAPI Guard is a thin adapter: all security logic (models, handlers, decora
 uv add tornadoapi-guard        # or: pip install tornadoapi-guard
 ```
 
-Requires Python 3.10-3.14, `tornado`, and `guard-core` (installed automatically).
+Requires Python 3.10-3.15, `tornado`, and `guard-core` (installed automatically).
 
 ## Setup
 

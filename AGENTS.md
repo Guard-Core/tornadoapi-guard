@@ -15,7 +15,7 @@ TornadoAPI Guard is a production-ready security library for Tornado applications
 
 - **PyPI Package**: `tornadoapi_guard`
 - **Import Name**: `tornadoapi_guard`
-- **Python Support**: 3.10, 3.11, 3.12, 3.13, 3.14
+- **Python Support**: 3.10, 3.11, 3.12, 3.13, 3.14, 3.15
 - **Package Manager**: uv (modern Python package manager)
 - **Build System**: Docker + Make
 
@@ -141,7 +141,7 @@ app = tornado.web.Application(
 ### Testing
 
 - `make test` - Run tests in Docker (Python 3.10)
-- `make test-all` - Test all Python versions (3.10-3.14)
+- `make test-all` - Test all Python versions (3.10-3.15)
 - `make test-3.11` - Test specific Python version
 - `make local-test` - Run tests locally with uv
 
@@ -180,7 +180,7 @@ app = tornado.web.Application(
 
 Environment variables:
 
-- `PYTHON_VERSION` - Python version (3.10-3.14)
+- `PYTHON_VERSION` - Python version (3.10-3.15)
 - `REDIS_URL` - Redis connection string
 - `REDIS_PREFIX` - Key prefix for Redis
 - `IPINFO_TOKEN` - IPInfo API token
@@ -218,7 +218,7 @@ tornadoapi-guard/
 
 - **pyproject.toml** - Project metadata and dependencies; tool configurations for ruff, mypy, pytest, vulture, bandit, radon, xenon, deptry, pymarkdown; Python 3.10+ requirement
 - **uv.lock** - Locked dependency versions, updated with `make lock`
-- **compose.yml / Dockerfile** - Multi-version Python support (3.10-3.14), Redis service for testing, volume mounts for development
+- **compose.yml / Dockerfile** - Multi-version Python support (3.10-3.15), Redis service for testing, volume mounts for development
 - **.pre-commit-config.yaml** - ruff format, ruff check, mypy, vulture, bandit, safety, radon, xenon, deptry
 
 ## Technology Stack
