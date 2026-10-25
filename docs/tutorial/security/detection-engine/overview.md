@@ -216,16 +216,20 @@ The engine loads patterns from:
 ### Adding Custom Patterns
 
 ```python
-from tornadoapi_guard import sus_patterns_handler
+from guard_core.handlers.suspatterns_handler import sus_patterns_manager_for
+
+# The module-level objects are the default app's. Take the ones of the app
+# you act on with the config that app was built with.
+patterns = sus_patterns_manager_for(config)
 
 # Add a pattern
-await sus_patterns_handler.add_pattern(r"(?i)malicious.*pattern", custom=True)
+await patterns.add_pattern(r"(?i)malicious.*pattern", custom=True)
 
 # Remove a pattern
-await sus_patterns_handler.remove_pattern(r"(?i)malicious.*pattern", custom=True)
+await patterns.remove_pattern(r"(?i)malicious.*pattern", custom=True)
 
 # Clear all custom patterns
-await sus_patterns_handler.clear_custom_patterns()
+await patterns.clear_custom_patterns()
 ```
 
 ## Performance Considerations

@@ -32,13 +32,18 @@ Manual IP Banning
 You can also manually ban IPs using the `IPBanManager`:
 
 ```python
-from tornadoapi_guard import SecurityHandler, ip_ban_manager
+from tornadoapi_guard import SecurityHandler
+from guard_core.handlers.ipban_handler import ip_ban_manager_for
+
+# The module-level objects are the default app's. Take the ones of the app
+# you act on with the config that app was built with.
+bans = ip_ban_manager_for(config)
 
 
 class BanIPHandler(SecurityHandler):
     async def post(self, ip: str) -> None:
         duration = int(self.get_argument("duration", "3600"))
-        await ip_ban_manager.ban_ip(ip, duration)
+        await bans.ban_ip(ip, duration)
         self.write({"message": f"IP {ip} banned for {duration} seconds"})
 ```
 
@@ -54,7 +59,7 @@ Check if an IP is currently banned:
 ```python
 class CheckBanHandler(SecurityHandler):
     async def get(self, ip: str) -> None:
-        is_banned = await ip_ban_manager.is_ip_banned(ip)
+        is_banned = await bans.is_ip_banned(ip)
         self.write({"ip": ip, "banned": is_banned})
 ```
 
@@ -70,7 +75,7 @@ Clear all active IP bans:
 ```python
 class ResetBansHandler(SecurityHandler):
     async def post(self) -> None:
-        await ip_ban_manager.reset()
+        await bans.reset()
         self.write({"message": "All IP bans cleared"})
 ```
 

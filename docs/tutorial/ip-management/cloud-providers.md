@@ -70,9 +70,13 @@ Cloud IP range update for AWS: +12 added, -3 removed
 You can also manually trigger a refresh:
 
 ```python
-from tornadoapi_guard import cloud_handler
+from guard_core.handlers.cloud_handler import cloud_handler_for
 
-cloud_handler.refresh()
+# The module-level objects are the default app's. Take the ones of the app
+# you act on with the config that app was built with.
+clouds = cloud_handler_for(config)
+
+clouds.refresh()
 ```
 
 ___
@@ -83,10 +87,14 @@ Provider Status
 Track when each provider's IP ranges were last refreshed:
 
 ```python
-from tornadoapi_guard import cloud_handler
+from guard_core.handlers.cloud_handler import cloud_handler_for
+
+# The module-level objects are the default app's. Take the ones of the app
+# you act on with the config that app was built with.
+clouds = cloud_handler_for(config)
 
 for provider in ("AWS", "GCP", "Azure"):
-    updated = cloud_handler.last_updated[provider]
+    updated = clouds.last_updated[provider]
     if updated:
         print(f"{provider}: last updated {updated.isoformat()}")
     else:
@@ -101,12 +109,17 @@ Custom IP Checking
 Check if an IP belongs to a cloud provider:
 
 ```python
-from tornadoapi_guard import SecurityHandler, cloud_handler
+from tornadoapi_guard import SecurityHandler
+from guard_core.handlers.cloud_handler import cloud_handler_for
+
+# The module-level objects are the default app's. Take the ones of the app
+# you act on with the config that app was built with.
+clouds = cloud_handler_for(config)
 
 
 class CheckCloudHandler(SecurityHandler):
     async def get(self, ip: str) -> None:
-        is_cloud = cloud_handler.is_cloud_ip(
+        is_cloud = clouds.is_cloud_ip(
             ip,
             providers={"AWS", "GCP", "Azure"},
         )

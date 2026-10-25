@@ -11,6 +11,7 @@ from typing import Any
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
+from guard_core.handlers.cloud_handler import cloud_handler_for
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
 
@@ -22,7 +23,6 @@ from tornadoapi_guard import (
     SecurityMiddleware,
     SecurityWebSocketHandler,
     TornadoGuardResponse,
-    cloud_handler,
 )
 
 logging.basicConfig(
@@ -782,7 +782,8 @@ class AdminCloudStatusHandler(JSONHandler):
     @guard_decorator.require_ip(whitelist=["127.0.0.1"])
     async def get(self) -> None:
         last_updated: dict[str, str | None] = {}
-        for provider, dt in cloud_handler.last_updated.items():
+        # `cloud_handler` is the default app's; this app's own manager:
+        for provider, dt in cloud_handler_for(security_config).last_updated.items():
             last_updated[provider] = dt.isoformat() if dt else None
         self.write_json(
             {
