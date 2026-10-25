@@ -18,7 +18,7 @@ from guard_core.core.routing import RouteConfigResolver, RoutingContext
 from guard_core.core.validation import RequestValidator, ValidationContext
 from guard_core.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard_core.exceptions import GuardRedisError
-from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.cloud_handler import cloud_handler_for
 from guard_core.handlers.cors_handler import CorsHandler, is_preflight
 from guard_core.handlers.ratelimit_handler import RateLimitManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
@@ -637,13 +637,14 @@ class SecurityMiddleware:
         if not self.config.block_cloud_providers:
             return
 
+        cloud_manager = cloud_handler_for(self.config)
         if self.config.enable_redis and self.redis_handler:
-            await cloud_handler.refresh_async(
+            await cloud_manager.refresh_async(
                 self.config.block_cloud_providers,
                 ttl=self.config.cloud_ip_refresh_interval,
             )
         else:
-            await cloud_handler.refresh(self.config.block_cloud_providers)
+            await cloud_manager.refresh(self.config.block_cloud_providers)
         self.last_cloud_ip_refresh = int(time.time())
 
     async def create_error_response(

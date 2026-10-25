@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from guard_core.decorators.base import RouteConfig
-from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.cloud_handler import cloud_handler_for
 from guard_core.handlers.security_headers_handler import security_headers_manager
 from guard_core.models import SecurityConfig
 from tornado.web import RequestHandler
@@ -403,7 +403,9 @@ async def test_refresh_cloud_ip_ranges_sync_path(
     simple_middleware: SecurityMiddleware,
 ) -> None:
     simple_middleware.config.block_cloud_providers = frozenset({"AWS"})
-    with patch.object(cloud_handler, "refresh", new=AsyncMock()) as mock_refresh:
+    with patch.object(
+        cloud_handler_for(simple_middleware.config), "refresh", new=AsyncMock()
+    ) as mock_refresh:
         await simple_middleware.refresh_cloud_ip_ranges()
         mock_refresh.assert_awaited_once()
     assert simple_middleware.last_cloud_ip_refresh > 0
@@ -419,7 +421,9 @@ async def test_refresh_cloud_ip_ranges_redis_path() -> None:
         block_cloud_providers={"AWS"},
     )
     middleware = SecurityMiddleware(config=config)
-    with patch.object(cloud_handler, "refresh_async", new=AsyncMock()) as mock_async:
+    with patch.object(
+        cloud_handler_for(config), "refresh_async", new=AsyncMock()
+    ) as mock_async:
         await middleware.refresh_cloud_ip_ranges()
         mock_async.assert_awaited()
     await middleware.reset()
