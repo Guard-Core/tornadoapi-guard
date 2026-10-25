@@ -3,6 +3,13 @@ Release Notes
 
 ___
 
+Unreleased
+----------
+
+- **Fixed** - **Country rules need no global rule.** The middleware keeps `config.geo_ip_handler` whenever one is configured and reads back the handler the engine built from `ipinfo_token` for a route-level `block_countries`, `allow_countries` or `geo_rate_limit`, so those rules work without a global country rule. The examples no longer carry a placeholder `blocked_countries`.
+
+___
+
 v2.0.0 (2026-10-15)
 -------------------
 

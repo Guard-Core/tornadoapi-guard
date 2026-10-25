@@ -94,7 +94,6 @@ security_config = SecurityConfig(
     trust_x_forwarded_proto=True,
     # The country routes need a GeoIP source: set IPINFO_TOKEN in the environment
     ipinfo_token=os.getenv("IPINFO_TOKEN"),
-    blocked_countries=frozenset({"XX"}),
     block_cloud_providers={"AWS", "GCP", "Azure"},
     blocked_user_agents=["badbot", "evil-crawler", "sqlmap"],
     enable_rate_limiting=True,
