@@ -102,6 +102,6 @@ Environment variables
 
 - `REDIS_URL` — Redis connection string (default `redis://localhost:6379`)
 - `REDIS_PREFIX` — Key prefix for Redis entries (default `tornadoapi_guard:`)
-- `IPINFO_TOKEN` — Token for IPInfo geolocation (optional)
+- `IPINFO_TOKEN` — Token for IPInfo geolocation (required: the country routes need a GeoIP source)
 - `HOST` — Host interface to bind (default `127.0.0.1`)
 - `PORT` — Listen port (default `8000`)
