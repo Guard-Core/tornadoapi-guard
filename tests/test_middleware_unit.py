@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import cast
@@ -248,10 +249,12 @@ async def test_set_decorator_handler(simple_middleware: SecurityMiddleware) -> N
 
 
 async def test_check_time_window_helper(
-    simple_middleware: SecurityMiddleware,
+    simple_middleware: SecurityMiddleware, caplog: pytest.LogCaptureFixture
 ) -> None:
-    result = await simple_middleware._check_time_window({})
-    assert result is True
+    with caplog.at_level(logging.ERROR):
+        result = await simple_middleware._check_time_window({})
+    assert result is False
+    assert "request denied" in caplog.text
 
 
 async def test_check_route_ip_access_helper(
