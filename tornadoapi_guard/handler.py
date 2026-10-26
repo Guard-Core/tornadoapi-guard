@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from guard_core._utils.app_scope import hold_app_scope, release_app_scope
 from tornado.web import RequestHandler
 from tornado.websocket import WebSocketHandler
 
@@ -30,8 +31,22 @@ async def _guard_handshake_or_request(handler: RequestHandler) -> None:
 
 
 class SecurityHandler(RequestHandler):
+    _guard_scope_token: Any = None
+
     async def prepare(self) -> None:
         await _guard_handshake_or_request(self)
+        middleware = _security_middleware_of(self)
+        if middleware is not None:
+            self._guard_scope_token = hold_app_scope(middleware.config)
+
+    async def _execute(self, transforms: Any, *args: bytes, **kwargs: bytes) -> None:
+        # Released here, in the context that held it: a connection's task serves
+        # its requests one after another, so a scope left set would reach the next.
+        try:
+            await super()._execute(transforms, *args, **kwargs)
+        finally:
+            release_app_scope(self._guard_scope_token)
+            self._guard_scope_token = None
 
     def finish(self, chunk: str | bytes | dict[str, Any] | None = None) -> Any:
         state = get_guard_state(self)
