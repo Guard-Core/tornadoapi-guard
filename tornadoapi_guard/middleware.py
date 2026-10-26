@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import threading
 import time
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Any, cast
 
+from guard_core._utils.sampling import observe_sampled_key
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
 from guard_core.core.checks.pipeline import SecurityCheckPipeline
@@ -85,6 +87,22 @@ def _matched_template(rules: Any, request: HTTPServerRequest) -> str | None:
         regex = getattr(rule.matcher, "regex", None)
         return cast(str, regex.pattern) if regex is not None else None
     return None
+
+
+_INIT_OUTAGE_SAMPLE_WINDOW_SECONDS = 60
+_INIT_OUTAGE_SAMPLE_KEY = "redis_unavailable_during_initialization"
+_init_outage_lock = threading.Lock()
+_init_outage_samples: OrderedDict[str, float] = OrderedDict()
+
+
+def _sample_init_outage_line() -> bool:
+    return observe_sampled_key(
+        _init_outage_samples,
+        _init_outage_lock,
+        _INIT_OUTAGE_SAMPLE_KEY,
+        window=_INIT_OUTAGE_SAMPLE_WINDOW_SECONDS,
+        max_tracked=1,
+    )
 
 
 class SecurityMiddleware:
@@ -581,6 +599,14 @@ class SecurityMiddleware:
         try:
             await self._ensure_initialized()
         except GuardRedisError as e:
+            if self.config.passive_mode:
+                if _sample_init_outage_line():
+                    self.logger.error(
+                        "Redis unavailable during initialization: %s "
+                        "(passive_mode=True, request passed through unguarded)",
+                        e,
+                    )
+                return None
             self.logger.error("Redis unavailable during initialization: %s", e)
             unavailable = await self._redis_unavailable_response()
             self._inject_cors(unavailable, guard_request.headers)
