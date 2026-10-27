@@ -276,52 +276,13 @@ class SecurityMiddleware:
         apply_security_headers_settings(security_headers_manager, config)
 
     def _build_security_pipeline(self) -> None:
-        from guard_core.core.checks import (
-            AuthenticationCheck,
-            CloudIpRefreshCheck,
-            CloudProviderCheck,
-            CorsPreflightCheck,
-            CustomRequestCheck,
-            CustomValidatorsCheck,
-            EmergencyModeCheck,
-            HttpsEnforcementCheck,
-            IpSecurityCheck,
-            RateLimitCheck,
-            ReferrerCheck,
-            RequestLoggingCheck,
-            RequestSizeContentCheck,
-            RequiredHeadersCheck,
-            RouteConfigCheck,
-            SuspiciousActivityCheck,
-            TimeWindowCheck,
-            UserAgentCheck,
-        )
+        from guard_core.core.checks import build_default_pipeline
 
-        checks = [
-            RouteConfigCheck(self),
-            EmergencyModeCheck(self),
-            HttpsEnforcementCheck(self),
-            RequestLoggingCheck(self),
-            RequestSizeContentCheck(self),
-            RequiredHeadersCheck(self),
-            AuthenticationCheck(self),
-            ReferrerCheck(self),
-            CustomValidatorsCheck(self),
-            TimeWindowCheck(self),
-            CloudIpRefreshCheck(self),
-            IpSecurityCheck(self),
-            CloudProviderCheck(self),
-            UserAgentCheck(self),
-            CorsPreflightCheck(self),
-            RateLimitCheck(self),
-            SuspiciousActivityCheck(self),
-            CustomRequestCheck(self),
-        ]
-
-        self.security_pipeline = SecurityCheckPipeline(checks)
+        pipeline = build_default_pipeline(self)
+        self.security_pipeline = pipeline
         self.logger.info(
-            f"Security pipeline initialized with {len(checks)} checks: "
-            f"{self.security_pipeline.get_check_names()}"
+            f"Security pipeline initialized with {len(pipeline)} checks: "
+            f"{pipeline.get_check_names()}"
         )
 
     def set_decorator_handler(
