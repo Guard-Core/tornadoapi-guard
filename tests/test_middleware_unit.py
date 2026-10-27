@@ -235,6 +235,20 @@ async def test_configure_security_headers_disabled() -> None:
     assert security_headers_manager.enabled is False
 
 
+async def test_configure_security_headers_hsts_none_configures_manager() -> None:
+    await security_headers_manager.reset()
+    security_headers_manager.enabled = False
+    config = SecurityConfig(
+        geo_ip_handler=None,
+        enable_redis=False,
+        enable_penetration_detection=False,
+        security_headers={"enabled": True, "hsts": None},
+    )
+    SecurityMiddleware(config=config)
+    assert security_headers_manager.enabled is True
+    assert security_headers_manager.hsts_config is None
+
+
 async def test_guard_response_factory_property(
     simple_middleware: SecurityMiddleware,
 ) -> None:

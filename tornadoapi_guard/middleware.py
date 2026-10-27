@@ -7,6 +7,7 @@ import time
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 
+from guard_core import apply_security_headers_settings
 from guard_core._utils.sampling import observe_sampled_key
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
@@ -272,37 +273,7 @@ class SecurityMiddleware:
         return {"enabled": True, **handler_stats}
 
     def _configure_security_headers(self, config: SecurityConfig) -> None:
-        if not config.security_headers:
-            security_headers_manager.enabled = False
-            return
-
-        if not config.security_headers.get("enabled", True):
-            security_headers_manager.enabled = False
-            return
-
-        security_headers_manager.enabled = True
-        headers_config = config.security_headers
-        hsts_config = headers_config.get("hsts", {})
-
-        security_headers_manager.configure(
-            enabled=headers_config.get("enabled", True),
-            csp=headers_config.get("csp"),
-            hsts_max_age=hsts_config.get("max_age"),
-            hsts_include_subdomains=hsts_config.get("include_subdomains", True),
-            hsts_preload=hsts_config.get("preload", False),
-            frame_options=headers_config.get("frame_options", "SAMEORIGIN"),
-            content_type_options=headers_config.get("content_type_options", "nosniff"),
-            xss_protection=headers_config.get("xss_protection", "1; mode=block"),
-            referrer_policy=headers_config.get(
-                "referrer_policy", "strict-origin-when-cross-origin"
-            ),
-            permissions_policy=headers_config.get("permissions_policy", "UNSET"),
-            custom_headers=headers_config.get("custom"),
-            cors_origins=config.cors_allow_origins if config.enable_cors else None,
-            cors_allow_credentials=config.cors_allow_credentials,
-            cors_allow_methods=config.cors_allow_methods,
-            cors_allow_headers=config.cors_allow_headers,
-        )
+        apply_security_headers_settings(security_headers_manager, config)
 
     def _build_security_pipeline(self) -> None:
         from guard_core.core.checks import (
