@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, MutableMapping
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 from weakref import WeakKeyDictionary
 
@@ -12,7 +12,9 @@ if TYPE_CHECKING:
     from tornado.web import RequestHandler
 
 
-_guard_state_store: WeakKeyDictionary[Any, SimpleNamespace] = WeakKeyDictionary()
+_guard_state_store: WeakKeyDictionary[RequestHandler, SimpleNamespace] = (
+    WeakKeyDictionary()
+)
 
 
 def get_guard_state(handler: RequestHandler) -> SimpleNamespace:
@@ -55,7 +57,7 @@ class TornadoGuardRequest:
 
     @property
     def headers(self) -> Mapping[str, str]:
-        return cast(Mapping[str, str], self._request.headers)
+        return self._request.headers
 
     @property
     def query_params(self) -> Mapping[str, str]:
@@ -76,11 +78,11 @@ class TornadoGuardRequest:
         return (self._request.body or b"")[:max_bytes]
 
     @property
-    def state(self) -> Any:
+    def state(self) -> SimpleNamespace:
         return self._state
 
     @property
-    def scope(self) -> dict[str, Any]:
+    def scope(self) -> dict[str, object]:
         return {
             "handler": self._handler,
             "app": self._handler.application,
@@ -197,7 +199,7 @@ def sync_guard_response(
         if before_headers.get(name) != value:
             handler.set_header(name, value)
     if response.body != before_body:
-        cast(Any, handler)._write_buffer = [response.body or b""]
+        handler._write_buffer = [response.body or b""]
 
 
 def unwrap_response(guard_response: GuardResponse) -> TornadoGuardResponse:

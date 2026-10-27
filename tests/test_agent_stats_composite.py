@@ -4,13 +4,14 @@ from unittest.mock import patch
 
 import pytest
 from guard_core.models import SecurityConfig
+from guard_core.protocols.agent_protocol import JsonValue
 
 from tornadoapi_guard import SecurityMiddleware
 
 
 class _StatsAgentStub:
     def __init__(self) -> None:
-        self.stats: dict[str, object] = {"buffer_stats": {"events_dropped": 3}}
+        self.stats: dict[str, JsonValue] = {"buffer_stats": {"events_dropped": 3}}
 
     async def start(self) -> None: ...
 
@@ -33,7 +34,7 @@ class _StatsAgentStub:
     async def health_check(self) -> bool:
         return True
 
-    def get_stats(self) -> dict[str, object]:
+    def get_stats(self) -> dict[str, JsonValue]:
         return self.stats
 
 

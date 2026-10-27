@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import inspect
 import threading
 import time
 from collections import OrderedDict
-from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Any, cast
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 
 from guard_core._utils.sampling import observe_sampled_key
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
@@ -25,10 +25,19 @@ from guard_core.handlers.cors_handler import CorsHandler, is_preflight
 from guard_core.handlers.ratelimit_handler import RateLimitManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
 from guard_core.models import SecurityConfig
+from guard_core.protocols.agent_protocol import AgentHandlerProtocol, JsonValue
+from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
 from guard_core.utils import extract_client_ip, setup_custom_logging
-from tornado.httputil import HTTPHeaders, HTTPServerRequest
-from tornado.web import ErrorHandler, HTTPError, RequestHandler, StaticFileHandler
+from tornado.httputil import HTTPConnection, HTTPHeaders, HTTPServerRequest
+from tornado.routing import Rule
+from tornado.web import (
+    Application,
+    ErrorHandler,
+    HTTPError,
+    RequestHandler,
+    StaticFileHandler,
+)
 
 from tornadoapi_guard.adapters import (
     TornadoGuardRequest,
@@ -49,7 +58,7 @@ def _path_params(
     return tuple(sorted(params))
 
 
-def _rule_prefixes(rules: Any) -> list[str]:
+def _rule_prefixes(rules: Iterable[Rule]) -> list[str]:
     prefixes: list[str] = []
     for rule in rules:
         nested = getattr(rule.target, "rules", None)
@@ -66,16 +75,16 @@ def _rule_prefixes(rules: Any) -> list[str]:
 _ROUTE_TEMPLATE_CACHE_SIZE = 4096
 
 
-class _NoConnection:
-    def set_close_callback(self, callback: Any) -> None:
+class _NoConnection(HTTPConnection):
+    def set_close_callback(self, callback: Callable[[], None]) -> None:
         return None
 
 
-def _rule_count(rules: Any) -> int:
+def _rule_count(rules: Iterable[Rule]) -> int:
     return sum(1 + _rule_count(getattr(rule.target, "rules", ())) for rule in rules)
 
 
-def _matched_template(rules: Any, request: HTTPServerRequest) -> str | None:
+def _matched_template(rules: Iterable[Rule], request: HTTPServerRequest) -> str | None:
     for rule in rules:
         if rule.matcher.match(request) is None:
             continue
@@ -85,7 +94,8 @@ def _matched_template(rules: Any, request: HTTPServerRequest) -> str | None:
             if inner is not None:
                 return inner
         regex = getattr(rule.matcher, "regex", None)
-        return cast(str, regex.pattern) if regex is not None else None
+        pattern = getattr(regex, "pattern", None)
+        return pattern if isinstance(pattern, str) else None
     return None
 
 
@@ -127,14 +137,15 @@ class SecurityMiddleware:
 
             self.redis_handler = RedisManager(config)
 
-        self.agent_handler: Any = None
+        self.agent_handler: AgentHandlerProtocol | None = None
         if config.enable_agent:
             agent_config = config.to_agent_config()
             if agent_config:
                 try:
-                    from guard_agent import guard_agent
-
-                    self.agent_handler = guard_agent(agent_config)
+                    # The registry guard-agent predates AgentHandlerProtocol's JsonValue
+                    # stats, so a static import does not type-check against it yet.
+                    guard_agent_module = importlib.import_module("guard_agent")
+                    self.agent_handler = guard_agent_module.guard_agent(agent_config)
                     self.logger.info("Guard Agent initialized successfully")
                 except ImportError:
                     self.logger.warning(
@@ -151,7 +162,7 @@ class SecurityMiddleware:
                 )
 
         self.security_pipeline: SecurityCheckPipeline | None = None
-        self._routing_application: Any = None
+        self._routing_application: Application | None = None
         self._route_template_cache: OrderedDict[str, str | None] = OrderedDict()
         self._route_template_signature: tuple[int, int] | None = None
 
@@ -250,7 +261,7 @@ class SecurityMiddleware:
         return self._guard_response_factory
 
     @property
-    def agent_stats(self) -> dict[str, Any]:
+    def agent_stats(self) -> dict[str, JsonValue]:
         if self.agent_handler is None:
             return {"enabled": False}
         handler_stats = self.agent_handler.get_stats()
@@ -464,7 +475,7 @@ class SecurityMiddleware:
             version="HTTP/1.1",
             headers=HTTPHeaders({"Host": "localhost"}),
             host="localhost",
-            connection=cast(Any, _NoConnection()),
+            connection=_NoConnection(),
         )
         delegate = application.find_handler(request)
         handler_class = getattr(delegate, "handler_class", None)
@@ -506,8 +517,8 @@ class SecurityMiddleware:
 
     def _view_caller(
         self, handler: RequestHandler
-    ) -> Callable[[Any], Awaitable[GuardResponse]]:
-        async def call_view(_guard_request: Any) -> GuardResponse:
+    ) -> Callable[[GuardRequest], Awaitable[GuardResponse]]:
+        async def call_view(_guard_request: GuardRequest) -> GuardResponse:
             state = get_guard_state(handler)
             state.guard_capturing = True
             try:
@@ -656,7 +667,7 @@ class SecurityMiddleware:
         )
         final = unwrap_response(result)
         self._inject_cors(final, guard_request.headers)
-        if not cast(Any, handler)._headers_written:
+        if not handler._headers_written:
             sync_guard_response(handler, before_headers, before_body, final)
 
     async def refresh_cloud_ip_ranges(self) -> None:

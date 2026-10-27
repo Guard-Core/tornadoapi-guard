@@ -8,9 +8,16 @@ import tornado.httpserver
 import tornado.netutil
 import tornado.web
 from guard_core.models import SecurityConfig
+from guard_core.protocols.agent_protocol import JsonValue
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError
 
 from tornadoapi_guard import SecurityHandler, SecurityMiddleware
+
+
+def _buffer_stats(stats: dict[str, JsonValue]) -> dict[str, JsonValue]:
+    buffer_stats = stats["buffer_stats"]
+    assert isinstance(buffer_stats, dict)
+    return buffer_stats
 
 
 class HelloHandler(SecurityHandler):
@@ -149,7 +156,7 @@ async def test_agent_stats_reflects_live_drop_counter_increments() -> None:
     middleware.agent_handler = fake_handler
 
     first = middleware.agent_stats
-    assert first["buffer_stats"]["events_dropped"] == 0
+    assert _buffer_stats(first)["events_dropped"] == 0
 
     fake_handler.get_stats.return_value = {
         "buffer_stats": {"events_dropped": 7, "metrics_dropped": 3},
@@ -157,7 +164,9 @@ async def test_agent_stats_reflects_live_drop_counter_increments() -> None:
     }
 
     second = middleware.agent_stats
-    assert second["buffer_stats"]["events_dropped"] == 7
-    assert second["buffer_stats"]["metrics_dropped"] == 3
-    assert second["transport_stats"]["circuit_breaker_state"] == "OPEN"
+    assert _buffer_stats(second)["events_dropped"] == 7
+    assert _buffer_stats(second)["metrics_dropped"] == 3
+    transport = second["transport_stats"]
+    assert isinstance(transport, dict)
+    assert transport["circuit_breaker_state"] == "OPEN"
     assert fake_handler.get_stats.call_count == 2

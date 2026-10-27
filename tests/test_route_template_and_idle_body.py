@@ -9,10 +9,17 @@ import tornado.netutil
 import tornado.web
 from guard_core.models import SecurityConfig
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError
+from tornado.routing import PathMatches
 
 import tornadoapi_guard.middleware as middleware_module
 from tornadoapi_guard import SecurityHandler, SecurityMiddleware
 from tornadoapi_guard.adapters import TornadoGuardRequest
+
+
+def _application_of(middleware: SecurityMiddleware) -> tornado.web.Application:
+    application = middleware._routing_application
+    assert application is not None
+    return application
 
 
 class PageHandler(SecurityHandler):
@@ -124,7 +131,7 @@ async def test_the_template_is_cached_until_the_route_count_changes(
     real = middleware_module._matched_template
 
     def counting(rules: Any, request: Any) -> str | None:
-        if rules is middleware._routing_application.default_router.rules:
+        if rules is _application_of(middleware).default_router.rules:
             calls.append(request.path)
         return real(rules, request)
 
@@ -134,7 +141,7 @@ async def test_the_template_is_cached_until_the_route_count_changes(
     middleware.route_template("/shop/cart.php")
     assert calls == ["/shop/cart.php"]
 
-    application = middleware._routing_application
+    application = _application_of(middleware)
     application.wildcard_router.add_rules([(r"/late\.php", PageHandler)])
     middleware.route_template("/shop/cart.php")
     assert calls == ["/shop/cart.php", "/shop/cart.php"]
@@ -148,7 +155,7 @@ async def test_the_template_cache_is_cleared_when_the_rules_object_changes(
     await _status(port, "/echo")
     assert middleware.route_template("/shop/cart.php") == r"/shop/cart\.php$"
 
-    application = middleware._routing_application
+    application = _application_of(middleware)
     application.default_router.rules = [
         type(rule)(rule.matcher, rule.target)
         for rule in application.default_router.rules
@@ -156,7 +163,10 @@ async def test_the_template_cache_is_cleared_when_the_rules_object_changes(
     application.wildcard_router.rules[:] = [
         rule
         for rule in application.wildcard_router.rules
-        if "cart" not in str(rule.matcher.regex.pattern)
+        if not (
+            isinstance(rule.matcher, PathMatches)
+            and "cart" in str(rule.matcher.regex.pattern)
+        )
     ]
 
     assert middleware.route_template("/shop/cart.php") is None

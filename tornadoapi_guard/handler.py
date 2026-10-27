@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from contextvars import Token
 
-from guard_core._utils.app_scope import hold_app_scope, release_app_scope
-from tornado.web import RequestHandler
+from guard_core._utils.app_scope import AppScope, hold_app_scope, release_app_scope
+from tornado.web import OutputTransform, RequestHandler
 from tornado.websocket import WebSocketHandler
 
 from tornadoapi_guard.adapters import apply_guard_response, get_guard_state
@@ -31,7 +31,7 @@ async def _guard_handshake_or_request(handler: RequestHandler) -> None:
 
 
 class SecurityHandler(RequestHandler):
-    _guard_scope_token: Any = None
+    _guard_scope_token: Token[AppScope | None] | None = None
 
     async def prepare(self) -> None:
         await _guard_handshake_or_request(self)
@@ -39,7 +39,9 @@ class SecurityHandler(RequestHandler):
         if middleware is not None:
             self._guard_scope_token = hold_app_scope(middleware.config)
 
-    async def _execute(self, transforms: Any, *args: bytes, **kwargs: bytes) -> None:
+    async def _execute(
+        self, transforms: list[OutputTransform], *args: bytes, **kwargs: bytes
+    ) -> None:
         # Released here, in the context that held it: a connection's task serves
         # its requests one after another, so a scope left set would reach the next.
         try:
@@ -48,10 +50,12 @@ class SecurityHandler(RequestHandler):
             release_app_scope(self._guard_scope_token)
             self._guard_scope_token = None
 
-    def finish(self, chunk: str | bytes | dict[str, Any] | None = None) -> Any:
+    def finish(
+        self, chunk: str | bytes | dict[str, object] | None = None
+    ) -> asyncio.Future[None]:
         state = get_guard_state(self)
         pending = getattr(state, "guard_finish", None)
-        if pending is not None:
+        if isinstance(pending, asyncio.Future):
             return pending
         if getattr(state, "guard_capturing", False):
             if chunk is not None:
@@ -67,7 +71,9 @@ class SecurityHandler(RequestHandler):
         task.add_done_callback(_background_tasks.discard)
         return task
 
-    async def _guard_finish(self, chunk: str | bytes | dict[str, Any] | None) -> None:
+    async def _guard_finish(
+        self, chunk: str | bytes | dict[str, object] | None
+    ) -> None:
         middleware = self._get_security_middleware()
         assert middleware is not None
         try:
