@@ -6,11 +6,7 @@ from typing import Any
 
 import pytest
 from guard_core.handlers.cloud_handler import cloud_handler
-from guard_core.handlers.ipban_handler import (
-    IPBanManager,
-    ip_ban_manager,
-    reset_global_state,
-)
+from guard_core.handlers.ipban_handler import reset_global_state
 from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.ratelimit_handler import (
     _managers,
@@ -66,8 +62,6 @@ def _maybe_geo_ip() -> IPInfoManager | None:
 
 @pytest.fixture(autouse=True)
 async def reset_state() -> AsyncGenerator[None, None]:
-    # A second app's initialize_redis makes its own manager the class singleton
-    IPBanManager._instance = ip_ban_manager
     await reset_global_state()
     await security_headers_manager.reset()
     original_patterns = sus_patterns_handler.patterns.copy()
