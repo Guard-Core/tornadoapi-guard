@@ -147,7 +147,7 @@ async def test_init_with_agent_success(
     def _ok(_cfg: object) -> object:
         return sentinel
 
-    fake = _types.SimpleNamespace(guard_agent=_ok)
+    fake = _types.SimpleNamespace(GuardAgentHandler=_ok)
     monkeypatch.setitem(sys.modules, "guard_agent", fake)
 
     config = SecurityConfig(
@@ -176,7 +176,7 @@ async def test_init_with_agent_init_error(
     def _raise(_cfg: object) -> object:
         raise RuntimeError("boom")
 
-    fake = _types.SimpleNamespace(guard_agent=_raise)
+    fake = _types.SimpleNamespace(GuardAgentHandler=_raise)
     monkeypatch.setitem(sys.modules, "guard_agent", fake)
 
     config = SecurityConfig(

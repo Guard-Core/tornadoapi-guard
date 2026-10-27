@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import importlib
 import inspect
 import threading
 import time
@@ -142,10 +141,9 @@ class SecurityMiddleware:
             agent_config = config.to_agent_config()
             if agent_config:
                 try:
-                    # The registry guard-agent predates AgentHandlerProtocol's JsonValue
-                    # stats, so a static import does not type-check against it yet.
-                    guard_agent_module = importlib.import_module("guard_agent")
-                    self.agent_handler = guard_agent_module.guard_agent(agent_config)
+                    from guard_agent import GuardAgentHandler
+
+                    self.agent_handler = GuardAgentHandler(agent_config)
                     self.logger.info("Guard Agent initialized successfully")
                 except ImportError:
                     self.logger.warning(
