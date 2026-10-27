@@ -442,3 +442,36 @@ async def test_initialize_is_idempotent(
     pipeline_before = simple_middleware.security_pipeline
     await simple_middleware.initialize()
     assert simple_middleware.security_pipeline is pipeline_before
+
+
+async def test_guard_phase_before_initialize_raises_runtime_error() -> None:
+    middleware = SecurityMiddleware(
+        config=SecurityConfig(
+            geo_ip_handler=None,
+            enable_redis=False,
+            enable_penetration_detection=False,
+        )
+    )
+    handler = _make_handler()
+    with pytest.raises(RuntimeError, match="security pipeline is not built"):
+        await middleware._guard_phase(handler, TornadoGuardRequest(handler))
+
+
+async def test_preflight_before_initialize_raises_runtime_error() -> None:
+    middleware = SecurityMiddleware(
+        config=SecurityConfig(
+            geo_ip_handler=None,
+            enable_redis=False,
+            enable_penetration_detection=False,
+            enable_cors=True,
+        )
+    )
+    handler = _make_handler(
+        method="OPTIONS",
+        headers={
+            "Origin": "https://example.com",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    with pytest.raises(RuntimeError, match="security pipeline is not built"):
+        await middleware._handle_preflight(TornadoGuardRequest(handler))

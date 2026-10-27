@@ -73,3 +73,16 @@ class _FakeConnection:
 
     def finish(self) -> None:
         pass
+
+
+async def test_guard_finish_without_middleware_raises_runtime_error() -> None:
+    app = tornado.web.Application([(r"/", SimpleHandler)])
+    request = tornado.httputil.HTTPServerRequest(
+        method="GET",
+        uri="/",
+        headers=tornado.httputil.HTTPHeaders(),
+        connection=cast(HTTPConnection, _FakeConnection()),
+    )
+    handler = HandlerClass(app, request)
+    with pytest.raises(RuntimeError, match="security_middleware missing"):
+        await handler._guard_finish(None)

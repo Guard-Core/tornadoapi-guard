@@ -114,6 +114,12 @@ def _sample_init_outage_line() -> bool:
     )
 
 
+_PIPELINE_NOT_INITIALIZED = (
+    "The security pipeline is not built: the middleware handled a request "
+    "before initialize() completed"
+)
+
+
 class SecurityMiddleware:
     def __init__(self, *, config: SecurityConfig) -> None:
         self.config = config
@@ -538,8 +544,10 @@ class SecurityMiddleware:
         headers = dict(guard_request.headers)
         if not is_preflight(guard_request.method, headers):
             return None
-        assert self.security_pipeline is not None
-        blocking = await self.security_pipeline.execute(guard_request)
+        pipeline = self.security_pipeline
+        if pipeline is None:
+            raise RuntimeError(_PIPELINE_NOT_INITIALIZED)
+        blocking = await pipeline.execute(guard_request)
         if blocking is not None:
             self._inject_cors(blocking, headers)
             return blocking
@@ -560,7 +568,9 @@ class SecurityMiddleware:
     async def _guard_phase(
         self, handler: RequestHandler, guard_request: TornadoGuardRequest
     ) -> GuardResponse | None:
-        assert self.security_pipeline is not None
+        pipeline = self.security_pipeline
+        if pipeline is None:
+            raise RuntimeError(_PIPELINE_NOT_INITIALIZED)
         call_view = self._view_caller(handler)
 
         passthrough = await self.bypass_handler.handle_passthrough(
@@ -582,7 +592,7 @@ class SecurityMiddleware:
         if bypass is not None:
             return bypass
 
-        blocking = await self.security_pipeline.execute(guard_request)
+        blocking = await pipeline.execute(guard_request)
         if blocking is not None:
             return blocking
 

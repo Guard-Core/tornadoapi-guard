@@ -75,7 +75,11 @@ class SecurityHandler(RequestHandler):
         self, chunk: str | bytes | dict[str, object] | None
     ) -> None:
         middleware = self._get_security_middleware()
-        assert middleware is not None
+        if middleware is None:
+            raise RuntimeError(
+                "security_middleware missing from the application settings "
+                "while a guarded response was finishing"
+            )
         try:
             if chunk is not None:
                 self.write(chunk)
