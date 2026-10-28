@@ -32,5 +32,7 @@ curl -sS http://localhost/rate/strict
 ```
 
 Configuration is environment-driven (`REDIS_URL`, `REDIS_PREFIX`,
-`IPINFO_TOKEN`, `ADMIN_TOKEN`, `RATE_LIMIT`, `RATE_LIMIT_WINDOW`,
+`ADMIN_TOKEN`, `RATE_LIMIT`, `RATE_LIMIT_WINDOW`,
 `AUTO_BAN_THRESHOLD`, `AUTO_BAN_DURATION`); see `docker-compose.yml`.
+
+This example has no country rule, so it needs no `IPINFO_TOKEN` and no GeoIP source.

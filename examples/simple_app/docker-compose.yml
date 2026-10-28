@@ -9,7 +9,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - REDIS_PREFIX=${REDIS_PREFIX:-"tornadoapi_guard:"}
-      - IPINFO_TOKEN=${IPINFO_TOKEN:-"test_token"}
+      - IPINFO_TOKEN=${IPINFO_TOKEN:?set IPINFO_TOKEN (free at ipinfo.io)}
       - HOST=0.0.0.0
       - PORT=8000
     volumes:

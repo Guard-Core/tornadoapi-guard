@@ -27,7 +27,6 @@ services:
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8
       - REDIS_URL=redis://redis:6379
       - REDIS_PREFIX=${REDIS_PREFIX:-tornadoapi_guard:}
-      - IPINFO_TOKEN=${IPINFO_TOKEN:-test_token}
       - ADMIN_TOKEN=${ADMIN_TOKEN:-admin-token-change-me}
       - RATE_LIMIT=${RATE_LIMIT:-30}
       - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}

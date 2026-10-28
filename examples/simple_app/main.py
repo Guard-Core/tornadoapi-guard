@@ -85,6 +85,16 @@ _REDIS_URL = os.getenv("REDIS_URL", "")
 _ENABLE_REDIS = bool(_REDIS_URL)
 
 
+def require_ipinfo_token() -> str:
+    token = os.environ.get("IPINFO_TOKEN", "").strip()
+    if not token:
+        raise SystemExit(
+            "IPINFO_TOKEN is not set: the country routes need a GeoIP source. "
+            "Get a free token at https://ipinfo.io/signup and export IPINFO_TOKEN."
+        )
+    return token
+
+
 security_config = SecurityConfig(
     # Include the Docker client networks so host curls are not flagged
     whitelist=["127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
@@ -93,7 +103,7 @@ security_config = SecurityConfig(
     trusted_proxy_depth=2,
     trust_x_forwarded_proto=True,
     # The country routes need a GeoIP source: set IPINFO_TOKEN in the environment
-    ipinfo_token=os.getenv("IPINFO_TOKEN"),
+    ipinfo_token=require_ipinfo_token(),
     block_cloud_providers={"AWS", "GCP", "Azure"},
     blocked_user_agents=["badbot", "evil-crawler", "sqlmap"],
     enable_rate_limiting=True,

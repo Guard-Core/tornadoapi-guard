@@ -12,6 +12,7 @@ Using Docker Compose
 --------------------
 
 ```bash
+export IPINFO_TOKEN=<your token>  # required: free at https://ipinfo.io/signup
 # Start the example app and Redis
 docker compose up
 
@@ -28,6 +29,7 @@ Running locally (no Docker)
 ```bash
 cd examples/simple_app
 pip install -r requirements.txt
+export IPINFO_TOKEN=<your token>  # required: free at https://ipinfo.io/signup
 python main.py
 ```
 
@@ -102,6 +104,6 @@ Environment variables
 
 - `REDIS_URL` — Redis connection string (default `redis://localhost:6379`)
 - `REDIS_PREFIX` — Key prefix for Redis entries (default `tornadoapi_guard:`)
-- `IPINFO_TOKEN` — Token for IPInfo geolocation (required: the country routes need a GeoIP source)
+- `IPINFO_TOKEN` — Token for IPInfo geolocation (required: the country routes need a GeoIP source; the example stops at startup without it, and `docker compose` refuses to start)
 - `HOST` — Host interface to bind (default `127.0.0.1`)
 - `PORT` — Listen port (default `8000`)
