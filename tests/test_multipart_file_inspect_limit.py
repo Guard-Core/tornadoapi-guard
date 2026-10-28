@@ -13,19 +13,21 @@ from tornado.httpclient import AsyncHTTPClient, HTTPResponse
 from tornadoapi_guard import SecurityHandler, SecurityMiddleware
 
 BODY_LIMIT = 262144
-DEFAULT_FILE_LIMIT = SecurityConfig().detection_max_file_inspect_bytes
-PAST_THE_LIMIT_PADDING = BODY_LIMIT + 1024
-RAISED_FILE_LIMIT = 1_000_000
+DEFAULT_FILE_LIMIT = 1048576
+PAST_THE_BODY_LIMIT_PADDING = BODY_LIMIT + 1024
+PAST_THE_FILE_LIMIT_PADDING = DEFAULT_FILE_LIMIT + 1024
+RAISED_FILE_LIMIT = 2 * DEFAULT_FILE_LIMIT
+EXPLICIT_FILE_LIMIT = BODY_LIMIT
 BOUNDARY = "wp251boundary"
 _PAYLOAD = "1' UNION SELECT password FROM users--"
 _FORWARDED = {"X-Forwarded-For": "203.0.113.50"}
 _MULTIPART_TYPE = f"multipart/form-data; boundary={BOUNDARY}"
 
 
-def _multipart_body() -> bytes:
+def _multipart_body(padding: int) -> bytes:
     pad = (
         f'--{BOUNDARY}\r\nContent-Disposition: form-data; name="pad"\r\n\r\n'
-        f"{'A' * PAST_THE_LIMIT_PADDING}\r\n"
+        f"{'A' * padding}\r\n"
     )
     comment = (
         f'--{BOUNDARY}\r\nContent-Disposition: form-data; name="comment"\r\n\r\n'
@@ -35,7 +37,7 @@ def _multipart_body() -> bytes:
 
 
 def _json_body() -> bytes:
-    pad = "A" * PAST_THE_LIMIT_PADDING
+    pad = "A" * PAST_THE_BODY_LIMIT_PADDING
     return ('{"pad": "' + pad + '", "comment": "' + _PAYLOAD + '"}').encode()
 
 
@@ -103,13 +105,19 @@ async def serve() -> AsyncGenerator[Serve, None]:
         await middleware.reset()
 
 
+def test_the_default_file_limit_is_one_mebibyte() -> None:
+    assert SecurityConfig().detection_max_file_inspect_bytes == DEFAULT_FILE_LIMIT
+
+
 @pytest.mark.parametrize("chunked", [False, True])
-async def test_multipart_past_the_body_limit_is_scanned_under_a_raised_file_limit(
+async def test_multipart_past_the_default_file_limit_is_scanned_when_raised(
     serve: Serve, chunked: bool
 ) -> None:
     post = await serve(RAISED_FILE_LIMIT)
 
-    response = await post(_multipart_body(), _MULTIPART_TYPE, chunked)
+    response = await post(
+        _multipart_body(PAST_THE_FILE_LIMIT_PADDING), _MULTIPART_TYPE, chunked
+    )
 
     assert response.code == 400
     assert b"Suspicious activity detected" in response.body
@@ -121,7 +129,37 @@ async def test_a_multipart_body_past_the_default_file_limit_is_refused_not_passe
 ) -> None:
     post = await serve(DEFAULT_FILE_LIMIT)
 
-    response = await post(_multipart_body(), _MULTIPART_TYPE, chunked)
+    response = await post(
+        _multipart_body(PAST_THE_FILE_LIMIT_PADDING), _MULTIPART_TYPE, chunked
+    )
+
+    assert response.code == 400
+    assert b"Suspicious activity detected" not in response.body
+
+
+@pytest.mark.parametrize("chunked", [False, True])
+async def test_a_multipart_body_within_the_default_file_limit_is_scanned(
+    serve: Serve, chunked: bool
+) -> None:
+    post = await serve(DEFAULT_FILE_LIMIT)
+
+    response = await post(
+        _multipart_body(PAST_THE_BODY_LIMIT_PADDING), _MULTIPART_TYPE, chunked
+    )
+
+    assert response.code == 400
+    assert b"Suspicious activity detected" in response.body
+
+
+@pytest.mark.parametrize("chunked", [False, True])
+async def test_a_multipart_body_past_an_explicit_262144_limit_is_refused_not_passed(
+    serve: Serve, chunked: bool
+) -> None:
+    post = await serve(EXPLICIT_FILE_LIMIT)
+
+    response = await post(
+        _multipart_body(PAST_THE_BODY_LIMIT_PADDING), _MULTIPART_TYPE, chunked
+    )
 
     assert response.code == 400
     assert b"Suspicious activity detected" not in response.body
@@ -132,6 +170,18 @@ async def test_a_json_body_of_the_same_size_stays_refused_under_a_raised_file_li
     serve: Serve, chunked: bool
 ) -> None:
     post = await serve(RAISED_FILE_LIMIT)
+
+    response = await post(_json_body(), "application/json", chunked)
+
+    assert response.code == 400
+    assert b"Suspicious activity detected" not in response.body
+
+
+@pytest.mark.parametrize("chunked", [False, True])
+async def test_a_json_body_of_the_same_size_stays_refused_under_the_default_file_limit(
+    serve: Serve, chunked: bool
+) -> None:
+    post = await serve(DEFAULT_FILE_LIMIT)
 
     response = await post(_json_body(), "application/json", chunked)
 
