@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import inspect
 import os
 import threading
@@ -81,16 +80,6 @@ def _rule_prefixes(rules: Iterable[Rule]) -> list[str]:
 
 _ROUTE_TEMPLATE_CACHE_SIZE = 4096
 _ROUTE_TEMPLATE_KEY_MAX_LENGTH = 256
-
-
-def _route_template_key(path: str) -> str | bytes:
-    # A request path is attacker-sized: a long one is keyed by its digest, so the
-    # cache holds at most 4096 short keys whatever the paths are.
-    if len(path) <= _ROUTE_TEMPLATE_KEY_MAX_LENGTH:
-        return path
-    return hashlib.blake2b(
-        path.encode("utf-8", "surrogatepass"), digest_size=16
-    ).digest()
 
 
 class _NoConnection(HTTPConnection):
@@ -186,7 +175,7 @@ class SecurityMiddleware:
 
         self.security_pipeline: SecurityCheckPipeline | None = None
         self._routing_application: Application | None = None
-        self._route_template_cache: OrderedDict[str | bytes, str | None] = OrderedDict()
+        self._route_template_cache: OrderedDict[str | int, str | None] = OrderedDict()
         self._route_template_signature: tuple[int, int] | None = None
 
         self._guard_response_factory = TornadoResponseFactory()
@@ -403,7 +392,9 @@ class SecurityMiddleware:
         if signature != self._route_template_signature:
             self._route_template_cache.clear()
             self._route_template_signature = signature
-        key = _route_template_key(path)
+        # An attacker-sized path is keyed by its hash (randomized per process, so a
+        # collision cannot be built): the cache holds at most 4096 short keys.
+        key = path if len(path) <= _ROUTE_TEMPLATE_KEY_MAX_LENGTH else hash(path)
         if key in self._route_template_cache:
             self._route_template_cache.move_to_end(key)
             return self._route_template_cache[key]
