@@ -210,7 +210,7 @@ Default value:
     "csp": None,
     "frame_options": "SAMEORIGIN",
     "content_type_options": "nosniff",
-    "xss_protection": "1; mode=block",
+    "xss_protection": "0",
     "referrer_policy": "strict-origin-when-cross-origin",
     "permissions_policy": "geolocation=(), microphone=(), camera=()",
     "custom": None,
@@ -228,7 +228,7 @@ Sub-field reference:
 | `csp` | dict[str, list[str]] \| None | None | Content Security Policy directives |
 | `frame_options` | str | `"SAMEORIGIN"` | `X-Frame-Options` (`DENY` \| `SAMEORIGIN`) |
 | `content_type_options` | str | `"nosniff"` | `X-Content-Type-Options` |
-| `xss_protection` | str | `"1; mode=block"` | `X-XSS-Protection` |
+| `xss_protection` | str | `"0"` | `X-XSS-Protection` (the 5.0.0 engine default is `0`; set `"1; mode=block"` to restore the earlier default) |
 | `referrer_policy` | str | `"strict-origin-when-cross-origin"` | `Referrer-Policy` |
 | `permissions_policy` | str | `"geolocation=(), microphone=(), camera=()"` | `Permissions-Policy` |
 | `custom` | dict[str, str] \| None | None | Additional custom headers applied to every response |
