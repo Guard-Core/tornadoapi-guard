@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import inspect
+import os
 import threading
 import time
 from collections import OrderedDict
@@ -440,6 +441,10 @@ class SecurityMiddleware:
                 raw = delegate.path_args[0] if delegate.path_args else b""
             handler.path = handler.parse_url_path(handler.decode_argument(raw))
             absolute = handler.get_absolute_path(handler.root, handler.path)
+            if os.path.isdir(absolute) and not path.endswith("/"):
+                # Tornado answers a directory without a trailing slash with a
+                # redirect, which is no file served and needs a connection to build.
+                return False
             validated = handler.validate_absolute_path(handler.root, absolute)
         except HTTPError:
             return False

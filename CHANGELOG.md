@@ -42,6 +42,8 @@ Unreleased
 
 - **Fixed** - **The route-template cache holds bounded keys.** It keyed on the raw request path with no length cap, so 4096 distinct 60 KB `.php` paths retained about 246 MB per middleware. A path longer than 256 characters is now keyed by its 16-byte digest; hits and misses stay cached, so a templated route with a long parameter is still a hit.
 
+- **Fixed** - **A directory path under a `StaticFileHandler` with a `default_filename` no longer raises in the route gate.** `static_file_exists` let the handler build the redirect Tornado answers a directory without a trailing slash with, which needs a connection the gate has not got: a `TypeError` and one `ERROR` log line per request. It now answers that the path is no file served.
+
 ___
 
 v2.0.0 (2026-10-15)
