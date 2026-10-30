@@ -420,7 +420,7 @@ async def test_route_bypass_of_a_sync_view_that_finishes_with_a_chunk(
     assert srv.metrics == []
 
 
-async def test_streamed_response_is_observed_but_headers_are_already_sent(
+async def test_streamed_response_is_observed_and_carries_the_security_headers(
     serve: ServerFactory,
 ) -> None:
     srv = await serve()
@@ -429,7 +429,7 @@ async def test_streamed_response_is_observed_but_headers_are_already_sent(
 
     assert resp.code == 200
     assert resp.body == b"ab"
-    assert "X-Content-Type-Options" not in resp.headers
+    assert resp.headers["X-Content-Type-Options"] == "nosniff"
     assert srv.metrics == ["/streaming"]
 
 

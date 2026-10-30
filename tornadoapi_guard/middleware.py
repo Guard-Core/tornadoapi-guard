@@ -642,6 +642,24 @@ class SecurityMiddleware:
         if not handler._headers_written:
             sync_guard_response(handler, before_headers, before_body, final)
 
+    async def apply_headers_before_flush(self, handler: RequestHandler) -> None:
+        """Security and CORS headers for a response whose headers are about to go
+        out with the first `flush()`, before the response pass can add them."""
+        state = get_guard_state(handler)
+        guard_request: TornadoGuardRequest = state.guard_request
+        state.guard_headers_flushed = True
+        guard_response = TornadoGuardResponse.from_handler(handler)
+        before_headers = dict(guard_response.headers)
+        factory = self.response_factory
+        await factory.apply_security_headers(guard_response, guard_request.url_path)
+        origin = guard_request.headers.get("origin")
+        if origin:
+            await factory.apply_cors_headers(guard_response, origin)
+        self._inject_cors(guard_response, guard_request.headers)
+        sync_guard_response(
+            handler, before_headers, guard_response.body, guard_response
+        )
+
     async def refresh_cloud_ip_ranges(self) -> None:
         if not self.config.block_cloud_providers:
             return

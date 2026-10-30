@@ -46,6 +46,8 @@ Unreleased
 
 - **Fixed** - **Routes of a virtual host (`add_handlers(host_regex, ...)`) are visible to the route gate.** `resolve_route`, `route_template` and `static_file_exists` matched against a request whose Host was `localhost`, so a virtual-host route was not found: its own `.map` and `.php` routes stayed flagged and endpoint identity was lost. They now match under the request's Host.
 
+- **Fixed** - **A handler that calls `flush()` carries the security and CORS headers.** The headers go out with the first `flush()`, before the response pass, which skips its header work once they are sent: the response had no security headers and no CORS headers, with no log line, on guarded and `exclude_paths` routes alike. `SecurityHandler.flush()` now applies them before the first flush. A test that pinned the missing headers on a streamed response now pins their presence.
+
 ___
 
 v2.0.0 (2026-10-15)

@@ -50,6 +50,26 @@ class SecurityHandler(RequestHandler):
             release_app_scope(self._guard_scope_token)
             self._guard_scope_token = None
 
+    def flush(self, include_footers: bool = False) -> asyncio.Future[None]:
+        state = get_guard_state(self)
+        middleware = self._get_security_middleware()
+        if (
+            middleware is None
+            or not getattr(state, "guard_response_pass", False)
+            or getattr(state, "guard_headers_flushed", False)
+            or self._headers_written
+        ):
+            return super().flush(include_footers)
+        return asyncio.ensure_future(
+            self._flush_with_guard_headers(middleware, include_footers)
+        )
+
+    async def _flush_with_guard_headers(
+        self, middleware: SecurityMiddleware, include_footers: bool
+    ) -> None:
+        await middleware.apply_headers_before_flush(self)
+        await super().flush(include_footers)
+
     def finish(
         self, chunk: str | bytes | dict[str, object] | None = None
     ) -> asyncio.Future[None]:
@@ -86,6 +106,8 @@ class SecurityHandler(RequestHandler):
             await middleware.run_post_processing(self)
         except Exception:
             middleware.logger.exception("Response processing failed")
+        # The finish flushes synchronously: nothing is left to add before it.
+        get_guard_state(self).guard_headers_flushed = True
         await super().finish()
 
     def _get_security_middleware(self) -> SecurityMiddleware | None:
