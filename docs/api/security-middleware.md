@@ -49,7 +49,7 @@ SecurityHandler.prepare()
     ├─ CORS preflight (pipeline first, then the preflight response)
     ├─ Engine BypassHandler.handle_passthrough
     │     ├─ Excluded path → scoped (pipeline runs only the checks enforced there)
-    │     └─ No client address → fail_secure 403
+    │     └─ No client address → fail_secure 403 (logged and admitted in passive_mode)
     ├─ Route config + engine BypassHandler.handle_security_bypass
     │     └─ "all" bypass → calls the real handler method, applies the modifier
     ├─ SecurityCheckPipeline.execute()  (17 checks)
@@ -154,7 +154,7 @@ async def run_pre_processing(self, handler: RequestHandler) -> GuardResponse | N
     Called automatically by SecurityHandler.prepare(). Returns a
     GuardResponse when the request is answered without reaching the
     handler method (blocked, CORS preflight, route bypass, fail_secure
-    403 for a missing client address, Redis unavailable 503), in which
+    403 for a missing client address (not under passive_mode), Redis unavailable 503), in which
     case SecurityHandler writes it back through the handler, or None
     when the request may proceed to the handler method.
 

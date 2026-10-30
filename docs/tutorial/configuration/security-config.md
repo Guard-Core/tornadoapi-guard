@@ -65,7 +65,7 @@ Rate Limiting Settings
 |-------|------|---------|-------------|
 | `rate_limit` | int | 10 | Maximum requests allowed per window |
 | `rate_limit_window` | int | 60 | Window length in seconds |
-| `endpoint_rate_limits` | dict[str, tuple[int, int]] | `{}` | Per-endpoint `{path: (requests, window)}` overrides (set by dynamic rules) |
+| `endpoint_rate_limits` | dict[str, tuple[int, int]] | `{}` | Per-endpoint `{path: (requests, window)}` limits; a dynamic rule's limits merge per endpoint (see Dynamic rules below) |
 
 ___
 
@@ -153,6 +153,8 @@ Guard Agent is an optional telemetry and dynamic-rule SaaS platform.
 | `agent_retry_attempts` | int | 3 | Retry attempts for failed requests |
 | `enable_dynamic_rules` | bool | False | Accept dynamic rule updates from the SaaS platform |
 | `dynamic_rule_interval` | int | 300 | Seconds between dynamic rule polls |
+
+Dynamic rules: a dynamic rule adds to your configuration and never wipes it. Blocked countries, blocked cloud providers and blocked user agents are added to your static lists. `whitelist_countries` replaces your allow-list only when the rule's value is non-empty and valid. `endpoint_rate_limits` merge per endpoint: the rule's value wins for the endpoints it names and your static limits stay for the rest. When the rule expires or is revoked, your static configuration applies again, exactly as you wrote it.
 
 Setting `enable_agent=True` without `agent_api_key` raises a validation error. Setting `enable_dynamic_rules=True` without `enable_agent=True` also raises.
 

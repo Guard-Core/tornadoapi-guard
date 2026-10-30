@@ -48,6 +48,8 @@ Unreleased
 
 - **Fixed** - **A handler that calls `flush()` carries the security and CORS headers.** The headers go out with the first `flush()`, before the response pass, which skips its header work once they are sent: the response had no security headers and no CORS headers, with no log line, on guarded and `exclude_paths` routes alike. `SecurityHandler.flush()` now applies them before the first flush. A test that pinned the missing headers on a streamed response now pins their presence.
 
+- **Fixed (docs)** - **The docs state how a dynamic rule combines with the config, and what `passive_mode` does for a client with no address.** A dynamic rule adds to your configuration and never wipes it: blocked countries, blocked cloud providers and blocked user agents are added to your static lists, `whitelist_countries` is replaced only when the rule's value is non-empty and valid, and `endpoint_rate_limits` merge per endpoint (the rule's value wins for the endpoints it names, your static limits stay for the rest); the `endpoint_rate_limits` row no longer says dynamic rules set it. A request from a client with no address is refused under `fail_secure` (the default) and logged and admitted under `passive_mode`.
+
 ___
 
 v2.0.0 (2026-10-15)
