@@ -41,6 +41,11 @@ from tornado.web import (
     StaticFileHandler,
 )
 
+from tornadoapi_guard._route_gate_host import (
+    hold_route_gate_host,
+    release_route_gate_host,
+    route_gate_host,
+)
 from tornadoapi_guard.adapters import (
     TornadoGuardRequest,
     TornadoGuardResponse,
@@ -368,8 +373,8 @@ class SecurityMiddleware:
             method="GET",
             uri=path,
             version="HTTP/1.1",
-            headers=HTTPHeaders({"Host": "localhost"}),
-            host="localhost",
+            headers=HTTPHeaders({"Host": route_gate_host()}),
+            host=route_gate_host(),
         )
         delegate = application.find_handler(request)
         handler_class = getattr(delegate, "handler_class", ErrorHandler)
@@ -406,8 +411,8 @@ class SecurityMiddleware:
             method="GET",
             uri=path,
             version="HTTP/1.1",
-            headers=HTTPHeaders({"Host": "localhost"}),
-            host="localhost",
+            headers=HTTPHeaders({"Host": route_gate_host()}),
+            host=route_gate_host(),
         )
         template = _matched_template(rules, request)
         self._route_template_cache[key] = template
@@ -423,8 +428,8 @@ class SecurityMiddleware:
             method="GET",
             uri=path,
             version="HTTP/1.1",
-            headers=HTTPHeaders({"Host": "localhost"}),
-            host="localhost",
+            headers=HTTPHeaders({"Host": route_gate_host()}),
+            host=route_gate_host(),
             connection=_NoConnection(),
         )
         delegate = application.find_handler(request)
@@ -564,6 +569,15 @@ class SecurityMiddleware:
         )
 
     async def run_pre_processing(self, handler: RequestHandler) -> GuardResponse | None:
+        host_token = hold_route_gate_host(handler.request.headers.get("Host", ""))
+        try:
+            return await self._run_pre_processing(handler)
+        finally:
+            release_route_gate_host(host_token)
+
+    async def _run_pre_processing(
+        self, handler: RequestHandler
+    ) -> GuardResponse | None:
         guard_request = TornadoGuardRequest(handler)
         try:
             await self._ensure_initialized()

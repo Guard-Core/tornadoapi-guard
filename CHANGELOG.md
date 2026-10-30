@@ -44,6 +44,8 @@ Unreleased
 
 - **Fixed** - **A directory path under a `StaticFileHandler` with a `default_filename` no longer raises in the route gate.** `static_file_exists` let the handler build the redirect Tornado answers a directory without a trailing slash with, which needs a connection the gate has not got: a `TypeError` and one `ERROR` log line per request. It now answers that the path is no file served.
 
+- **Fixed** - **Routes of a virtual host (`add_handlers(host_regex, ...)`) are visible to the route gate.** `resolve_route`, `route_template` and `static_file_exists` matched against a request whose Host was `localhost`, so a virtual-host route was not found: its own `.map` and `.php` routes stayed flagged and endpoint identity was lost. They now match under the request's Host.
+
 ___
 
 v2.0.0 (2026-10-15)
