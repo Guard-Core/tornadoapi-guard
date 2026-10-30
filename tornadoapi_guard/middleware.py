@@ -392,12 +392,17 @@ class SecurityMiddleware:
         if signature != self._route_template_signature:
             self._route_template_cache.clear()
             self._route_template_signature = signature
+        cache = self._route_template_cache
+        if path in cache:
+            cache.move_to_end(path)
+            return cache[path]
         # An attacker-sized path is keyed by its hash (randomized per process, so a
-        # collision cannot be built): the cache holds at most 4096 short keys.
+        # collision cannot be built): the cache holds at most 4096 short keys. Only
+        # a path that is not cached under its own text pays for the length check.
         key = path if len(path) <= _ROUTE_TEMPLATE_KEY_MAX_LENGTH else hash(path)
-        if key in self._route_template_cache:
-            self._route_template_cache.move_to_end(key)
-            return self._route_template_cache[key]
+        if key is not path and key in cache:
+            cache.move_to_end(key)
+            return cache[key]
         request = HTTPServerRequest(
             method="GET",
             uri=path,
@@ -406,9 +411,9 @@ class SecurityMiddleware:
             host=route_gate_host(),
         )
         template = _matched_template(rules, request)
-        self._route_template_cache[key] = template
-        if len(self._route_template_cache) > _ROUTE_TEMPLATE_CACHE_SIZE:
-            self._route_template_cache.popitem(last=False)
+        cache[key] = template
+        if len(cache) > _ROUTE_TEMPLATE_CACHE_SIZE:
+            cache.popitem(last=False)
         return template
 
     async def static_file_exists(self, path: str) -> bool:
