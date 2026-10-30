@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncGenerator, Generator
-from typing import Any
+from typing import Any, NoReturn
 
 import pytest
+from guard_core.handlers import cloud_handler as cloud_handler_module
 from guard_core.handlers.cloud_handler import cloud_handler
 from guard_core.handlers.ipban_handler import reset_global_state
 from guard_core.handlers.ipinfo_handler import IPInfoManager
@@ -37,6 +38,22 @@ def _refuse_the_default_redis_port() -> Generator[None, None, None]:
     with pytest.MonkeyPatch.context() as monkeypatch:
         refuse_connections_to_the_default_redis_port(monkeypatch)
         yield
+
+
+@pytest.fixture(autouse=True)
+def _no_geo_or_cloud_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The suite never reaches ipinfo.io or a cloud provider: a download fails at
+    once, as it does without a network, instead of opening a socket that outlives
+    the test."""
+
+    async def refuse_database(self: IPInfoManager) -> None:
+        raise ConnectionError("the test suite has no network")
+
+    async def refuse_ranges(provider: str) -> NoReturn:
+        raise ConnectionError("the test suite has no network")
+
+    monkeypatch.setattr(IPInfoManager, "_fetch_and_store_database", refuse_database)
+    monkeypatch.setattr(cloud_handler_module, "_fetch_provider_ranges", refuse_ranges)
 
 
 @pytest.fixture(autouse=True)
