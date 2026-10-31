@@ -21,7 +21,10 @@ from tornadoapi_guard import (
     SecurityMiddleware,
 )
 
-config = SecurityConfig()
+config = SecurityConfig(
+    # response body scanning for return_monitor
+    behavior_scan_response_body=True,
+)
 middleware = SecurityMiddleware(config=config)
 guard_deco = SecurityDecorator(config)
 middleware.set_decorator_handler(guard_deco)
@@ -438,6 +441,8 @@ config = SecurityConfig(
     enable_redis=True,
     redis_url="redis://localhost:6379",
     redis_prefix="tornadoapi_guard:",
+    # response body scanning for return_monitor
+    behavior_scan_response_body=True,
 )
 
 # Behavioral tracking will use Redis for distributed state

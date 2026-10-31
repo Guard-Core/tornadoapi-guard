@@ -52,7 +52,7 @@ SecurityHandler.prepare()
     │     └─ No client address → fail_secure 403 (logged and admitted in passive_mode)
     ├─ Route config + engine BypassHandler.handle_security_bypass
     │     └─ "all" bypass → calls the real handler method, applies the modifier
-    ├─ SecurityCheckPipeline.execute()  (17 checks)
+    ├─ SecurityCheckPipeline.execute()  (up to 18 checks)
     └─ Process behavioral "usage" rules
     ↓  (any response above is written by apply_guard_response, CORS attached,
     ↓   and skips step 3)

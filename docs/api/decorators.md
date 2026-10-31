@@ -39,7 +39,11 @@ from tornadoapi_guard import (
     SecurityMiddleware,
 )
 
-config = SecurityConfig()
+config = SecurityConfig(
+    # geo source for block_countries, allow_countries and geo_rate_limit; response body scanning for return_monitor
+    ipinfo_token="your_ipinfo_token_here",
+    behavior_scan_response_body=True,
+)
 middleware = SecurityMiddleware(config=config)
 guard_deco = SecurityDecorator(config)
 middleware.set_decorator_handler(guard_deco)
@@ -282,8 +286,11 @@ from tornadoapi_guard import (
 config = SecurityConfig(
     enable_ip_banning=True,
     enable_rate_limiting=True,
-    rate_limit_requests=100,
+    rate_limit=100,
     rate_limit_window=3600,
+    # geo source for allow_countries; response body scanning for return_monitor
+    ipinfo_token="your_ipinfo_token_here",
+    behavior_scan_response_body=True,
 )
 
 middleware = SecurityMiddleware(config=config)

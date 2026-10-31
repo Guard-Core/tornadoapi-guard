@@ -117,19 +117,20 @@ class SecurityConfig:
     def __init__(
         self,
         geo_ip_handler: GeoIPHandler | None = None,
-        whitelist: list[str] | None = None,
-        blacklist: list[str] = [],
-        blocked_countries: list[str] = [],
-        whitelist_countries: list[str] = [],
+        whitelist: tuple[str, ...] | None = None,
+        blacklist: tuple[str, ...] = (),
+        blocked_countries: frozenset[str] = frozenset(),
+        whitelist_countries: frozenset[str] = frozenset(),
         blocked_user_agents: list[str] = [],
-        auto_ban_threshold: int = 5,
+        auto_ban_threshold: int = 10,
         auto_ban_duration: int = 3600,
-        rate_limit: int = 100,
+        rate_limit: int = 120,
         rate_limit_window: int = 60,
         enable_cors: bool = False,
         # ... other parameters
     ):
         # ... initialization
+        ...
 ```
 
 ___
@@ -174,9 +175,12 @@ SecurityDecorator Class
 The main decorator class combines all security capabilities:
 
 ```python
-from tornadoapi_guard import SecurityDecorator, SecurityHandler
+from tornadoapi_guard import SecurityConfig, SecurityDecorator, SecurityHandler
 
-config = SecurityConfig()
+config = SecurityConfig(
+    # geo source for block_countries, allow_countries and geo_rate_limit
+    ipinfo_token="your_ipinfo_token_here",
+)
 guard_deco = SecurityDecorator(config)
 
 

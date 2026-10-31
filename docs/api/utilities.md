@@ -98,19 +98,19 @@ is_ip_allowed
 
 ```python
 async def is_ip_allowed(
-    ip: str, config: SecurityConfig, ipinfo_db: IPInfoManager | None = None
+    ip: str, config: SecurityConfig, geo_ip_handler: GeoIPHandler | None = None
 ) -> bool:
     """
     Check if IP address is allowed.
     """
 ```
 
-The `ipinfo_db` parameter is now properly optional - it's only needed when country filtering is configured. If it's not provided when country filtering is configured, the function will work correctly but won't apply country filtering rules rules.
+The `geo_ip_handler` parameter is now properly optional - it's only needed when country filtering is configured. If it's not provided when country filtering is configured, the function will work correctly but won't apply country filtering rules.
 
 This function intelligently handles:
 
 - Whitelist/blacklist checking
-- Country filtering (only when IPInfoManager is provided)
+- Country filtering (only when a geo handler is provided)
 - Cloud provider detection (only when cloud blocking is configured)
 
 This selective processing aligns with TornadoAPI Guard's smart resource loading to optimize performance.
@@ -123,7 +123,7 @@ async def detect_penetration_attempt(
     request: GuardRequest,
     config: SecurityConfig | None = None,
     route_config: RouteConfig | None = None,
-) -> DetectionResult
+) -> DetectionResult: ...
 ```
 
 Detect potential penetration attempts in the request using the enhanced Detection Engine.

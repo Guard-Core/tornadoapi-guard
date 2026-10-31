@@ -40,55 +40,55 @@ ___
 Available endpoints
 -------------------
 
-- `/` — API overview with feature list and route map
-- `/basic/` — Basic endpoint (subject to global rate limit)
-- `/basic/ip` — Return client IP information
-- `/basic/health` — Health check (excluded from all security checks)
-- `/basic/echo` — Echo POST body with headers and method
-- `/access/ip-whitelist` — Require whitelisted client IP
-- `/access/ip-blacklist` — Reject blacklisted client IP
-- `/access/country-block` — Block requests from specific countries
-- `/access/country-allow` — Allow only specific countries
-- `/access/no-cloud` — Block all known cloud provider IPs
-- `/access/no-aws` — Block AWS IPs only
-- `/access/bypass-demo` — Bypass rate limit + IP/country/cloud checks for this route
-- `/auth/https-only` — Require HTTPS
-- `/auth/bearer-auth` — Require Bearer token in Authorization header
-- `/auth/api-key` — Require `X-API-Key` header
-- `/auth/custom-headers` — Require arbitrary custom headers
-- `/rate/custom-limit` — 5 requests per 60 seconds
-- `/rate/strict-limit` — 1 request per 10 seconds
-- `/rate/geo-rate-limit` — Per-country rate limits
-- `/behavior/usage-monitor` — Log when >10 calls in 5 minutes
-- `/behavior/return-monitor/{status_code}` — Ban IP after 3 HTTP 404s within 60s
-- `/behavior/suspicious-frequency` — Throttle high-frequency requests
-- `/behavior/behavior-rules` (POST) — Combined frequency + return pattern rules
-- `/headers/` — Security headers overview
-- `/headers/test-page` — HTML page demonstrating CSP
-- `/headers/csp-report` (POST) — CSP violation report receiver
-- `/headers/frame-test` — X-Frame-Options demonstration
-- `/headers/hsts-info` — HSTS configuration info
-- `/headers/security-analysis` — Per-request security analysis
-- `/content/no-bots` — Block common bot user agents
-- `/content/json-only` (POST) — Require `Content-Type: application/json`
-- `/content/size-limit` (POST) — Limit request body to 100 KB
-- `/content/referrer-check` — Require allowed `Referer` header
-- `/content/custom-validation` — Reject a custom user-agent pattern
-- `/advanced/business-hours` — Access only during 09:00–17:00 UTC
-- `/advanced/weekend-only` — Demonstrates `time_window` decorator
-- `/advanced/honeypot` (POST) — Honeypot bot detection
-- `/advanced/suspicious-patterns` — Enhanced suspicious pattern detection
-- `/admin/unban-ip` (POST) — Admin: unban an IP (localhost only)
-- `/admin/stats` — Admin: security statistics (localhost only)
-- `/admin/clear-cache` (POST) — Admin: clear security caches (localhost only)
-- `/admin/emergency-mode` (PUT) — Admin: toggle emergency mode (localhost only)
-- `/admin/cloud-status` — Admin: cloud provider refresh status (localhost only)
-- `/test/xss-test` (POST) — XSS detection test
-- `/test/sql-injection` — SQL injection detection test
-- `/test/path-traversal/{path}` — Path traversal detection test
-- `/test/command-injection` (POST) — Command injection detection test
-- `/test/mixed-attack` (POST) — Combined attack vectors
-- `/ws` — WebSocket echo endpoint
+- `/` - API overview with feature list and route map
+- `/basic/` - Basic endpoint (subject to global rate limit)
+- `/basic/ip` - Return client IP information
+- `/basic/health` - Health check (excluded from all security checks)
+- `/basic/echo` - Echo POST body with headers and method
+- `/access/ip-whitelist` - Require whitelisted client IP
+- `/access/ip-blacklist` - Reject blacklisted client IP
+- `/access/country-block` - Block requests from specific countries
+- `/access/country-allow` - Allow only specific countries
+- `/access/no-cloud` - Block all known cloud provider IPs
+- `/access/no-aws` - Block AWS IPs only
+- `/access/bypass-demo` - Bypass rate limit + IP/country/cloud checks for this route
+- `/auth/https-only` - Require HTTPS
+- `/auth/bearer-auth` - Require Bearer token in Authorization header
+- `/auth/api-key` - Require `X-API-Key` header
+- `/auth/custom-headers` - Require arbitrary custom headers
+- `/rate/custom-limit` - 5 requests per 60 seconds
+- `/rate/strict-limit` - 1 request per 10 seconds
+- `/rate/geo-rate-limit` - Per-country rate limits
+- `/behavior/usage-monitor` - Log when >10 calls in 5 minutes
+- `/behavior/return-monitor/{status_code}` - Ban IP after 3 HTTP 404s within 60s
+- `/behavior/suspicious-frequency` - Throttle high-frequency requests
+- `/behavior/behavior-rules` (POST) - Combined frequency + return pattern rules
+- `/headers/` - Security headers overview
+- `/headers/test-page` - HTML page demonstrating CSP
+- `/headers/csp-report` (POST) - CSP violation report receiver
+- `/headers/frame-test` - X-Frame-Options demonstration
+- `/headers/hsts-info` - HSTS configuration info
+- `/headers/security-analysis` - Per-request security analysis
+- `/content/no-bots` - Block common bot user agents
+- `/content/json-only` (POST) - Require `Content-Type: application/json`
+- `/content/size-limit` (POST) - Limit request body to 100 KB
+- `/content/referrer-check` - Require allowed `Referer` header
+- `/content/custom-validation` - Reject a custom user-agent pattern
+- `/advanced/business-hours` - Access only during 09:00-17:00 UTC
+- `/advanced/weekend-only` - Demonstrates `time_window` decorator
+- `/advanced/honeypot` (POST) - Honeypot bot detection
+- `/advanced/suspicious-patterns` - Enhanced suspicious pattern detection
+- `/admin/unban-ip` (POST) - Admin: unban an IP (localhost only)
+- `/admin/stats` - Admin: security statistics (localhost only)
+- `/admin/clear-cache` (POST) - Admin: clear security caches (localhost only)
+- `/admin/emergency-mode` (PUT) - Admin: toggle emergency mode (localhost only)
+- `/admin/cloud-status` - Admin: cloud provider refresh status (localhost only)
+- `/test/xss-test` (POST) - XSS detection test
+- `/test/sql-injection` - SQL injection detection test
+- `/test/path-traversal/{path}` - Path traversal detection test
+- `/test/command-injection` (POST) - Command injection detection test
+- `/test/mixed-attack` (POST) - Combined attack vectors
+- `/ws` - WebSocket echo endpoint
 
 ___
 
@@ -102,8 +102,8 @@ ___
 Environment variables
 ---------------------
 
-- `REDIS_URL` — Redis connection string (default `redis://localhost:6379`)
-- `REDIS_PREFIX` — Key prefix for Redis entries (default `tornadoapi_guard:`)
-- `IPINFO_TOKEN` — Token for IPInfo geolocation (required: the country routes need a GeoIP source; the example stops at startup without it, and `docker compose` refuses to start)
-- `HOST` — Host interface to bind (default `127.0.0.1`)
-- `PORT` — Listen port (default `8000`)
+- `REDIS_URL` - Redis connection string (default `redis://localhost:6379`)
+- `REDIS_PREFIX` - Key prefix for Redis entries (default `tornadoapi_guard:`)
+- `IPINFO_TOKEN` - Token for IPInfo geolocation (required: the country routes need a GeoIP source; the example stops at startup without it, and `docker compose` refuses to start)
+- `HOST` - Host interface to bind (default `127.0.0.1`)
+- `PORT` - Listen port (default `8000`)

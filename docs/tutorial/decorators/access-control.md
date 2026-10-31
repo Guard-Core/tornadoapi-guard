@@ -20,7 +20,10 @@ from tornadoapi_guard import (
     SecurityMiddleware,
 )
 
-config = SecurityConfig()
+config = SecurityConfig(
+    # geo source for block_countries, allow_countries and geo_rate_limit
+    ipinfo_token="your_ipinfo_token_here",
+)
 middleware = SecurityMiddleware(config=config)
 guard_deco = SecurityDecorator(config)
 middleware.set_decorator_handler(guard_deco)
@@ -149,7 +152,7 @@ class AccessNoAWSHandler(SecurityHandler):
 
 ```python
 class AccessResidentialOnlyHandler(SecurityHandler):
-    @guard_deco.block_clouds(["AWS", "GCP", "Azure", "DigitalOcean", "Cloudflare"])
+    @guard_deco.block_clouds(["AWS", "GCP", "Azure", "DigitalOcean", "Linode", "Vultr"])
     async def get(self) -> None:
         self.write({"data": "Residential IP addresses only"})
 ```

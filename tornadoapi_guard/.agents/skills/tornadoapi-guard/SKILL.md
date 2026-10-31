@@ -5,7 +5,7 @@ description: TornadoAPI Guard, the Tornado security adapter over guard-core. Use
 
 # TornadoAPI Guard
 
-Security adapter for Tornado: IP filtering, rate limiting, signature-based attack-pattern detection, security headers, and route-level security decorators. Import package is `tornadoapi_guard` (distribution name `tornadoapi_guard`). Current as of tornadoapi-guard 1.0.0 over guard-core.
+Security adapter for Tornado: IP filtering, rate limiting, signature-based attack-pattern detection, security headers, and route-level security decorators. Import package is `tornadoapi_guard` (distribution name `tornadoapi_guard`). Current as of tornadoapi-guard 2.0.0 over guard-core 5.0.0.
 
 TornadoAPI Guard is a thin adapter: all security logic (models, handlers, decorators, detection engine, protocols) lives in `guard_core`. Tornado is async, so this adapter uses the async `guard_core.*` tree directly (unlike the Flask/Django siblings, which use the `guard_core.sync` mirror).
 
@@ -24,7 +24,7 @@ TornadoAPI Guard is a thin adapter: all security logic (models, handlers, decora
 uv add tornadoapi-guard        # or: pip install tornadoapi-guard
 ```
 
-Requires Python 3.10-3.15, `tornado`, and `guard-core` (installed automatically).
+Requires Python 3.10-3.15, `tornado`, and `guard-core` 5.0.0 or newer (installed automatically).
 
 ## Setup
 
@@ -71,7 +71,7 @@ Decorators from `guard_core.decorators` write per-route `RouteConfig` objects; t
 
 * **A `RequestHandler` that does not subclass `SecurityHandler` is not guarded.** The pipeline runs in `SecurityHandler.prepare()`; plain `RequestHandler` subclasses bypass security entirely. Using `default_handler_class=JSONHandler` (a `SecurityHandler`) covers unrouted paths.
 * **A missing `security_middleware` Application setting disables guarding silently.** `SecurityHandler` reads `self.application.settings.get("security_middleware")`; when the setting is absent every hook returns early and requests pass unprotected. Always pass the middleware instance when building the `Application`.
-* **`enable_redis` defaults to `True`** with `redis_url="redis://localhost:6379"`. Without a reachable Redis, stateful checks fail; set `enable_redis=False` in no-Redis environments or point at a real instance.
+* **`enable_redis` is off unless a Redis connection field is set.** Since guard-core 5.0.0 Redis turns on exactly when `redis_url`, `redis_prefix` or another `redis_*` connection field is set explicitly (an explicit `enable_redis` always wins), and `enable_redis=True` alone uses `redis_url="redis://localhost:6379"`. With Redis on and no reachable server, stateful checks fail; point `redis_url` at a real instance or leave the Redis fields unset.
 * **Decorator-only checks vanish without `set_decorator_handler`.** Without the registered decorator, decorator-triggered checks are not built and their rules never fire.
 * **`request.arguments` values are bytes.** Decode before passing them anywhere that expects `str`.
 * **`passive_mode=True` logs but never blocks.** Use it to trial rules; switch to `False` once logs confirm the traffic you expect.

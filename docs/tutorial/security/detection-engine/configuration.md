@@ -26,7 +26,7 @@ config = SecurityConfig(
     # Enable/disable penetration detection
     enable_penetration_detection=True,  # Default: True
     # Auto-ban settings for suspicious activity
-    auto_ban_threshold=5,  # Ban after N suspicious requests
+    auto_ban_threshold=10,  # Ban after N suspicious requests (default: 10)
     auto_ban_duration=3600,  # Ban duration in seconds (1 hour)
 )
 ```
@@ -85,16 +85,14 @@ config = SecurityConfig(
     detection_slow_pattern_threshold=0.1,
     detection_monitor_history_size=1000,
     detection_max_tracked_patterns=1000,
-    use_redis=True,
-    redis_host="localhost",
-    redis_port=6379,
-    redis_db=0,
+    enable_redis=True,
+    redis_url="redis://localhost:6379/0",
     enable_agent=True,
     agent_api_key="your-api-key",
     agent_enable_events=True,
     agent_enable_metrics=True,
     custom_log_file="security.log",
-    log_level="WARNING",
+    log_suspicious_level="WARNING",
 )
 middleware = SecurityMiddleware(config=config)
 
@@ -176,7 +174,7 @@ dev_config = SecurityConfig(
     # Full monitoring
     detection_monitor_history_size=5000,  # Large history
     # Detailed logging
-    log_level="DEBUG",
+    log_suspicious_level="DEBUG",
     custom_log_file="security-debug.log",
 )
 ```
@@ -187,7 +185,7 @@ dev_config = SecurityConfig(
 
 | Parameter | Type | Default | Range | Description |
 |-----------|------|---------|-------|-------------|
-| `detection_compiler_timeout` | float | 2.0 | 0.1-30.0 | Maximum seconds for pattern execution |
+| `detection_compiler_timeout` | float | 2.0 | 0.1-10.0 | Maximum seconds for pattern execution |
 
 **Usage Guidelines:**
 
@@ -212,14 +210,14 @@ dev_config = SecurityConfig(
 
 | Parameter | Type | Default | Range | Description |
 |-----------|------|---------|-------|-------------|
-| `detection_semantic_threshold` | float | 0.7 | 0.0-1.0 | Minimum score to consider threat |
+| `detection_semantic_threshold` | float | 0.7 | 0.0-1.0 | Score the semantic analyzer must exceed for a finding |
 
 **Threshold Guidelines:**
 
 - 0.0-0.3: Very sensitive, many false positives
 - 0.4-0.6: Sensitive, catches more attacks
 - 0.7-0.8: Balanced (recommended)
-- 0.9-1.0: Very strict, may miss obfuscated attacks
+- 0.9-1.0: Very strict, may miss obfuscated attacks (1.0 produces no semantic finding)
 
 ### Performance Monitoring Settings
 
@@ -260,12 +258,12 @@ print(f"Components active: {status}")
 
 ## Configuration Validation
 
-The Detection Engine validates configuration on startup:
+`SecurityConfig` validates every detection field against its range when it is created:
 
 ```python
 try:
     config = SecurityConfig(
-        detection_compiler_timeout=0.05  # Too low, will be adjusted
+        detection_compiler_timeout=0.05  # Below the 0.1 minimum, rejected
     )
 except ValueError as e:
     print(f"Configuration error: {e}")
@@ -311,7 +309,7 @@ For heavier configuration needs, wrap `SecurityConfig` with [pydantic-settings](
 stats = await patterns.get_performance_stats()
 
 # Analyze configuration effectiveness
-if stats["summary"]["average_time"] > 0.05:
+if stats["summary"]["avg_execution_time"] > 0.05:
     print("Consider optimizing configuration for better performance")
 
 if stats["summary"]["timeout_rate"] > 0.01:
@@ -365,7 +363,7 @@ config.detection_max_content_length = 5000
 config.detection_compiler_timeout = 3.0
 
 # Monitor specific patterns
-slow_patterns = monitor.get_slow_patterns(threshold=0.05)
+slow_patterns = (await patterns.get_performance_stats())["slow_patterns"]
 ```
 
 ### Memory Usage
@@ -375,8 +373,8 @@ slow_patterns = monitor.get_slow_patterns(threshold=0.05)
 config.detection_monitor_history_size = 500
 config.detection_max_tracked_patterns = 500
 
-# Clear old metrics periodically
-monitor.clear_old_metrics()
+# The monitor keeps a bounded history (detection_monitor_history_size),
+# so recorded metrics need no periodic cleanup
 ```
 
 ## Next Steps

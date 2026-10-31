@@ -75,12 +75,13 @@ security_middleware.set_decorator_handler(guard_decorator)
 The application is then built in `build_application()`:
 
 ```python
-return tornado.web.Application(
-    handlers,
-    security_middleware=security_middleware,
-    guard_decorator=guard_decorator,
-    default_handler_class=JSONHandler,
-)
+def build_application() -> tornado.web.Application:
+    return tornado.web.Application(
+        handlers,
+        security_middleware=security_middleware,
+        guard_decorator=guard_decorator,
+        default_handler_class=JSONHandler,
+    )
 ```
 
 Both `security_middleware` and `guard_decorator` are passed as `Application` settings so the handler base class and the middleware can resolve them at request time.

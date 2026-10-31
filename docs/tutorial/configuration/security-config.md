@@ -63,7 +63,7 @@ Rate Limiting Settings
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `rate_limit` | int | 10 | Maximum requests allowed per window |
+| `rate_limit` | int | 120 | Maximum requests allowed per window |
 | `rate_limit_window` | int | 60 | Window length in seconds |
 | `endpoint_rate_limits` | dict[str, tuple[int, int]] | `{}` | Per-endpoint `{path: (requests, window)}` limits; a dynamic rule's limits merge per endpoint (see Dynamic rules below) |
 
@@ -128,7 +128,7 @@ Redis Settings
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `enable_redis` | bool | True | Enable Redis-backed distributed state |
+| `enable_redis` | bool | False | Enable Redis-backed distributed state. Left unset, Redis is on exactly when a Redis connection field (`redis_url`, `redis_prefix` and the other `redis_*` settings) is set explicitly; an explicit `enable_redis` always wins |
 | `redis_url` | str \| None | `"redis://localhost:6379"` | Redis connection URL |
 | `redis_prefix` | str | `"guard_core:"` | Prefix for all Redis keys |
 

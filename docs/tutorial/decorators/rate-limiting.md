@@ -20,7 +20,10 @@ from tornadoapi_guard import (
     SecurityMiddleware,
 )
 
-config = SecurityConfig()
+config = SecurityConfig(
+    # geo source for block_countries, allow_countries and geo_rate_limit
+    ipinfo_token="your_ipinfo_token_here",
+)
 middleware = SecurityMiddleware(config=config)
 guard_deco = SecurityDecorator(config)
 middleware.set_decorator_handler(guard_deco)
@@ -48,7 +51,7 @@ class RateCustomLimitHandler(SecurityHandler):
 
 ```python
 # Global rate limit: 100 requests/hour
-config = SecurityConfig(rate_limit_requests=100, rate_limit_window=3600)
+config = SecurityConfig(rate_limit=100, rate_limit_window=3600)
 
 
 class RatePublicHandler(SecurityHandler):

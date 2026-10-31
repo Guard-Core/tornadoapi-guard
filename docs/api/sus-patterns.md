@@ -70,15 +70,14 @@ async def remove_pattern(cls, pattern: str, custom: bool = False) -> bool:
 clear_custom_patterns
 ---------------------
 
+There is no single call that clears the custom patterns. Remove each one with `remove_pattern()`:
+
 ```python
-@classmethod
-async def clear_custom_patterns(cls) -> None:
-    """
-    Clear all custom patterns.
-    
-    Note: This does not affect default patterns loaded from YAML files.
-    """
+for pattern in await sus_patterns_handler.get_custom_patterns():
+    await sus_patterns_handler.remove_pattern(pattern, custom=True)
 ```
+
+The default patterns come from the built-in pattern table and are not affected.
 
 Pattern Retrieval Methods
 -------------------------
@@ -303,11 +302,11 @@ Basic Pattern Management
 from tornadoapi_guard import sus_patterns_handler
 
 # Add custom pattern
-await sus_patterns_handler.add_pattern(r"(?i)malicious.*pattern", custom=True)
+await sus_patterns_handler.add_pattern(r"(?i)malicious_pattern", custom=True)
 
 # Remove pattern
 success = await sus_patterns_handler.remove_pattern(
-    r"(?i)malicious.*pattern", custom=True
+    r"(?i)malicious_pattern", custom=True
 )
 
 # Get all patterns
@@ -343,13 +342,13 @@ Performance Monitoring
 # Get performance statistics
 stats = await sus_patterns_handler.get_performance_stats()
 if stats:
-    print(f"Average execution time: {stats['summary']['average_time']}")
+    print(f"Average execution time: {stats['summary']['avg_execution_time']}")
     print(f"Timeout rate: {stats['summary']['timeout_rate']}")
     
     # Check for slow patterns
     for pattern in stats["slow_patterns"]:
         print(f"Slow pattern: {pattern['pattern']}")
-        print(f"Average time: {pattern['average_time']}")
+        print(f"Average time: {pattern['avg_execution_time']}")
 
 # Check component status
 status = await sus_patterns_handler.get_component_status()
@@ -404,7 +403,7 @@ When Redis is enabled:
 await sus_patterns_handler.add_pattern(r"custom.*", custom=True)
 
 # Retrieved on startup
-patterns = await redis_handler.get("custom_patterns")
+patterns = await redis_handler.get_key("patterns", "custom_list")
 ```
 
 ___

@@ -35,13 +35,17 @@ Configure Security Settings
 Create a `SecurityConfig` instance with your desired settings. The configuration model is framework-agnostic and is identical to the one used in `fastapi-guard`:
 
 ```python
+from pathlib import Path
+
 from tornadoapi_guard import IPInfoManager, SecurityConfig
 
 config = SecurityConfig(
     geo_ip_handler=IPInfoManager(
-        "your_ipinfo_token_here"
+        "your_ipinfo_token_here",
+        db_path=Path(
+            "data/ipinfo/country_asn.mmdb"
+        ),  # Optional, default: ./data/ipinfo/country_asn.mmdb
     ),  # NOTE: Required for geolocation
-    db_path="data/ipinfo/country_asn.mmdb",  # Optional, default: ./data/ipinfo/country_asn.mmdb
     enable_redis=True,  # Enable Redis integration
     redis_url="redis://localhost:6379",  # Redis URL
     rate_limit=100,  # Max requests per minute

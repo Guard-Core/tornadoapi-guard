@@ -63,10 +63,11 @@ refresh
 -------
 
 ```python
-def refresh(self, providers: set[str] = _ALL_PROVIDERS):
+async def refresh(self, providers: Collection[str] = _ALL_PROVIDERS) -> None:
     """
-    Synchronous refresh of IP ranges from cloud providers.
-    Only available when Redis is not enabled.
+    Refresh of IP ranges from cloud providers.
+    Only available when Redis is not enabled; raises RuntimeError
+    when Redis is configured (use refresh_async instead).
     """
 ```
 
@@ -148,8 +149,8 @@ is_aws = cloud_handler.is_cloud_ip("54.239.28.85", {"AWS"})
 is_cloud = cloud_handler.is_cloud_ip("35.186.224.25", {"AWS", "GCP", "Azure"})
 
 # Refresh IP ranges manually if needed
-cloud_handler.refresh()  # Synchronous refresh
-await cloud_handler.refresh_async()  # Asynchronous with Redis
+await cloud_handler.refresh()  # Raises RuntimeError when Redis is enabled
+await cloud_handler.refresh_async()  # With Redis caching
 
 # Check when a provider was last refreshed
 aws_updated = cloud_handler.last_updated["AWS"]
