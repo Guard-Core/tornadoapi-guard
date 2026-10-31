@@ -57,6 +57,8 @@ Unreleased
 
 - **Fixed (docs)** - **The docs state how a dynamic rule combines with the config, and what `passive_mode` does for a client with no address.** A dynamic rule adds to your configuration and never wipes it: blocked countries, blocked cloud providers and blocked user agents are added to your static lists, `whitelist_countries` is replaced only when the rule's value is non-empty and valid, and `endpoint_rate_limits` merge per endpoint (the rule's value wins for the endpoints it names, your static limits stay for the rest); the `endpoint_rate_limits` row no longer says dynamic rules set it. A request from a client with no address is refused under `fail_secure` (the default) and logged and admitted under `passive_mode`.
 
+- **Fixed (test)** - **A test pins the no-address client under `passive_mode`.** `tests/test_unknown_client_passive_mode.py` checks that a request from a client with no address is refused with `403` under `fail_secure` and admitted under `passive_mode`, the behavior the docs describe; the passive arm needs guard-core's change that admits and logs a client with no address in passive mode.
+
 ___
 
 v2.0.0 (2026-10-15)
