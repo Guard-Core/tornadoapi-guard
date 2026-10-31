@@ -13,6 +13,8 @@ ___
 Unreleased
 ----------
 
+- **Added** - **A test runs the packaged agent skill file.** Every Python block of `tornadoapi_guard/.agents/skills/tornadoapi-guard/SKILL.md` is executed, top-level `await` included, so a renamed or missing API in the skill file fails the suite. The file needed no change.
+
 - **Breaking changes** - **A country rule or geo rate limit with no geo source now raises when the route is declared.** `@block_countries`, `@allow_countries` and `@geo_rate_limit` raise `ValueError` at import when the decorator's config has neither `geo_ip_handler` nor `ipinfo_token`, or has `ipinfo_token` without the `maxminddb` package and `aiohttp`, as long as `fail_on_misconfiguration` is `True` (the 5.0.0 engine default). Before, the app started and the first request raised. `fail_on_misconfiguration=False` keeps starting and logs the warning once at initialization. A decorator built from a config without a geo source and paired with a middleware config that has `ipinfo_token` now raises at import: give the decorator's config the token. Needs the guard-core release that carries the declaration check.
 
 - **Fixed** - **Country rules need no global rule.** The middleware keeps `config.geo_ip_handler` whenever one is configured and reads back the handler the engine built from `ipinfo_token` for a route-level `block_countries`, `allow_countries` or `geo_rate_limit`, so those rules work without a global country rule. The examples no longer carry a placeholder `blocked_countries`.
