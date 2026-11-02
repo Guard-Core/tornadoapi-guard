@@ -30,7 +30,12 @@ from guard_core.protocols.agent_protocol import AgentHandlerProtocol, JsonValue
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
 from guard_core.utils import extract_client_ip, setup_custom_logging
-from tornado.httputil import HTTPConnection, HTTPHeaders, HTTPServerRequest
+from tornado.httputil import (
+    HTTPConnection,
+    HTTPHeaders,
+    HTTPServerRequest,
+    RequestStartLine,
+)
 from tornado.routing import Rule
 from tornado.web import (
     Application,
@@ -359,11 +364,8 @@ class SecurityMiddleware:
         if application is None:
             return ()
         request = HTTPServerRequest(
-            method="GET",
-            uri=path,
-            version="HTTP/1.1",
+            start_line=RequestStartLine("GET", path, "HTTP/1.1"),
             headers=HTTPHeaders({"Host": route_gate_host()}),
-            host=route_gate_host(),
         )
         delegate = application.find_handler(request)
         handler_class = getattr(delegate, "handler_class", ErrorHandler)
@@ -404,11 +406,8 @@ class SecurityMiddleware:
             cache.move_to_end(key)
             return cache[key]
         request = HTTPServerRequest(
-            method="GET",
-            uri=path,
-            version="HTTP/1.1",
+            start_line=RequestStartLine("GET", path, "HTTP/1.1"),
             headers=HTTPHeaders({"Host": route_gate_host()}),
-            host=route_gate_host(),
         )
         template = _matched_template(rules, request)
         cache[key] = template
@@ -421,11 +420,8 @@ class SecurityMiddleware:
         if application is None:
             return False
         request = HTTPServerRequest(
-            method="GET",
-            uri=path,
-            version="HTTP/1.1",
+            start_line=RequestStartLine("GET", path, "HTTP/1.1"),
             headers=HTTPHeaders({"Host": route_gate_host()}),
-            host=route_gate_host(),
             connection=_NoConnection(),
         )
         delegate = application.find_handler(request)

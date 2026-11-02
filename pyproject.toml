@@ -36,7 +36,8 @@ keywords = [
     "api-security",
 ]
 dependencies = [
-    "tornado",
+    "tornado>=6.6; python_version >= '3.11'",
+    "tornado>=6.5.10; python_version < '3.11'",
     "guard-core>=4.4.0",
 ]
 

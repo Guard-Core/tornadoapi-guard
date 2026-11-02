@@ -49,9 +49,8 @@ async def test_get_security_middleware_rejects_wrong_type() -> None:
         [(r"/", SimpleHandler)], security_middleware="not-a-middleware"
     )
     request = tornado.httputil.HTTPServerRequest(
-        method="GET",
-        uri="/",
-        headers=tornado.httputil.HTTPHeaders(),
+        start_line=tornado.httputil.RequestStartLine("GET", "/", "HTTP/1.1"),
+        headers=tornado.httputil.HTTPHeaders({"Host": "localhost"}),
         connection=cast(HTTPConnection, _FakeConnection()),
     )
     handler = HandlerClass(app, request)
@@ -78,9 +77,8 @@ class _FakeConnection:
 async def test_guard_finish_without_middleware_raises_runtime_error() -> None:
     app = tornado.web.Application([(r"/", SimpleHandler)])
     request = tornado.httputil.HTTPServerRequest(
-        method="GET",
-        uri="/",
-        headers=tornado.httputil.HTTPHeaders(),
+        start_line=tornado.httputil.RequestStartLine("GET", "/", "HTTP/1.1"),
+        headers=tornado.httputil.HTTPHeaders({"Host": "localhost"}),
         connection=cast(HTTPConnection, _FakeConnection()),
     )
     handler = HandlerClass(app, request)
