@@ -1,0 +1,18 @@
+# Per-advisory suppressions read by the CVE gate (.github/workflows/cve-scan.yml, Guard-Core/.github cve-scan/cve_scan.py).
+# Every entry names one advisory, states why it does not reach users and carries an ignoreUntil date. An expired entry fails the gate,
+# an entry that matches nothing fails the gate, and an OSV MAL-* entry can never be listed. Delete the entry when the blocker is gone.
+
+[[IgnoredVulns]]
+id = "CVE-2026-116577"
+ignoreUntil = 2026-12-15
+reason = "tornado 6.5.10 is the Python 3.10 fork of the lock: the fixed tornado 6.6 requires Python >= 3.11 and this project declares >= 3.10, so no fixed release exists for 3.10 (the lock resolves 6.6 on 3.11 and later). Decide at the next release whether 3.10 stays supported; remove when it is dropped."
+
+[[IgnoredVulns]]
+id = "CVE-2026-115927"
+ignoreUntil = 2026-12-15
+reason = "tornado 6.5.10 is the Python 3.10 fork of the lock: the fixed tornado 6.6 requires Python >= 3.11 and this project declares >= 3.10, so no fixed release exists for 3.10 (the lock resolves 6.6 on 3.11 and later). Decide at the next release whether 3.10 stays supported; remove when it is dropped."
+
+[[IgnoredVulns]]
+id = "CVE-2026-116578"
+ignoreUntil = 2026-12-15
+reason = "tornado 6.5.10 is the Python 3.10 fork of the lock: the fixed tornado 6.6 requires Python >= 3.11 and this project declares >= 3.10, so no fixed release exists for 3.10 (the lock resolves 6.6 on 3.11 and later). Decide at the next release whether 3.10 stays supported; remove when it is dropped."
