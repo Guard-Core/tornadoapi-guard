@@ -19,8 +19,7 @@ on:
       - 'v*'
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: docs-deploy
@@ -28,6 +27,9 @@ concurrency:
 
 jobs:
   deploy:
+    name: deploy
+    permissions:
+      contents: write # mike pushes the versioned docs to the gh-pages branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
