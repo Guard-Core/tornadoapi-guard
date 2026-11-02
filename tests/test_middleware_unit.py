@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from guard_core.decorators.base import RouteConfig
 from guard_core.handlers.cloud_handler import cloud_handler_for
+from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
 from guard_core.models import SecurityConfig
 from tornado.web import RequestHandler
@@ -102,7 +103,7 @@ async def test_init_with_redis_enabled() -> None:
 
 
 async def test_init_with_blocked_countries_sets_geoip() -> None:
-    geo = MagicMock()
+    geo = IPInfoManager("test-token", None)
     config = SecurityConfig(
         geo_ip_handler=geo,
         enable_redis=False,
