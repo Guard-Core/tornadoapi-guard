@@ -92,6 +92,10 @@ class _NoConnection(HTTPConnection):
         return None
 
 
+def _bounded_key_part(text: str) -> str | int:
+    return text if len(text) <= _ROUTE_TEMPLATE_KEY_MAX_LENGTH else hash(text)
+
+
 def _rule_count(rules: Iterable[Rule]) -> int:
     return sum(1 + _rule_count(getattr(rule.target, "rules", ())) for rule in rules)
 
@@ -180,7 +184,9 @@ class SecurityMiddleware:
 
         self.security_pipeline: SecurityCheckPipeline | None = None
         self._routing_application: Application | None = None
-        self._route_template_cache: OrderedDict[str | int, str | None] = OrderedDict()
+        self._route_template_cache: OrderedDict[
+            tuple[str | int, str | int], str | None
+        ] = OrderedDict()
         self._route_template_signature: tuple[int, int] | None = None
 
         self._guard_response_factory = TornadoResponseFactory()
@@ -395,19 +401,23 @@ class SecurityMiddleware:
             self._route_template_cache.clear()
             self._route_template_signature = signature
         cache = self._route_template_cache
-        if path in cache:
-            cache.move_to_end(path)
-            return cache[path]
-        # An attacker-sized path is keyed by its hash (randomized per process, so a
-        # collision cannot be built): the cache holds at most 4096 short keys. Only
-        # a path that is not cached under its own text pays for the length check.
-        key = path if len(path) <= _ROUTE_TEMPLATE_KEY_MAX_LENGTH else hash(path)
-        if key is not path and key in cache:
+        host = route_gate_host()
+        # The lookup depends on the request's Host (virtual hosts), so the key does
+        # too. An attacker-sized path or Host is keyed by its hash (randomized per
+        # process, so a collision cannot be built): the cache holds at most 4096 short
+        # keys. Only a pair that is not cached under its own text pays for the length
+        # check.
+        raw = (host, path)
+        if raw in cache:
+            cache.move_to_end(raw)
+            return cache[raw]
+        key = (_bounded_key_part(host), _bounded_key_part(path))
+        if key != raw and key in cache:
             cache.move_to_end(key)
             return cache[key]
         request = HTTPServerRequest(
             start_line=RequestStartLine("GET", path, "HTTP/1.1"),
-            headers=HTTPHeaders({"Host": route_gate_host()}),
+            headers=HTTPHeaders({"Host": host}),
         )
         template = _matched_template(rules, request)
         cache[key] = template

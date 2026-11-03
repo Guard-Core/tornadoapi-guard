@@ -182,10 +182,16 @@ async def test_the_template_cache_drops_its_oldest_entry_at_the_limit(
     for path in ("/a.php", "/b.php", "/c.php"):
         middleware.route_template(path)
 
-    assert list(middleware._route_template_cache) == ["/b.php", "/c.php"]
+    assert list(middleware._route_template_cache) == [
+        ("localhost", "/b.php"),
+        ("localhost", "/c.php"),
+    ]
     middleware.route_template("/b.php")
     middleware.route_template("/d.php")
-    assert list(middleware._route_template_cache) == ["/b.php", "/d.php"]
+    assert list(middleware._route_template_cache) == [
+        ("localhost", "/b.php"),
+        ("localhost", "/d.php"),
+    ]
 
 
 async def test_the_idle_read_returns_the_buffered_prefix() -> None:
