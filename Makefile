@@ -27,6 +27,7 @@ lock:
 upgrade:
 	@uv lock --upgrade
 	@uv lock --directory tools/semgrep --upgrade
+	@curl --fail --silent --show-error --location https://semgrep.dev/c/auto --output tools/semgrep/rules.yaml
 	@uv sync --all-extras
 	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
 
@@ -156,7 +157,10 @@ quality: lint vulture radon xenon
 semgrep:
 	@echo "Running Semgrep static analysis..."
 	@echo ''
-	@uv run --project tools/semgrep --locked semgrep --config=auto tornadoapi_guard
+	@report="$$(mktemp)"; \
+	uv run --project tools/semgrep --locked semgrep --config tools/semgrep/rules.yaml --metrics=off --disable-version-check --json --quiet --output "$$report" tornadoapi_guard \
+		&& uv run --project tools/semgrep --locked python tools/semgrep/check_findings.py "$$report"; \
+	status=$$?; rm -f "$$report"; exit $$status
 	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
 
 # Run all analysis tools
