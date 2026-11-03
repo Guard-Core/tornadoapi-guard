@@ -5,7 +5,7 @@ description: TornadoAPI Guard, the Tornado security adapter over guard-core. Use
 
 # TornadoAPI Guard
 
-Security adapter for Tornado: IP filtering, rate limiting, signature-based attack-pattern detection, security headers, and route-level security decorators. Import package is `tornadoapi_guard` (distribution name `tornadoapi_guard`). Current as of tornadoapi-guard 2.0.0 over guard-core 5.0.0.
+Security adapter for Tornado: IP filtering, rate limiting, signature-based attack-pattern detection, security headers, and route-level security decorators. Import package is `tornadoapi_guard` (distribution name `tornadoapi_guard`). Current as of tornadoapi-guard 3.0.0 over guard-core 5.0.0.
 
 TornadoAPI Guard is a thin adapter: all security logic (models, handlers, decorators, detection engine, protocols) lives in `guard_core`. Tornado is async, so this adapter uses the async `guard_core.*` tree directly (unlike the Flask/Django siblings, which use the `guard_core.sync` mirror).
 
