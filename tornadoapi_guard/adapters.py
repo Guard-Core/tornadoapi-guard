@@ -205,9 +205,13 @@ def sync_guard_response(
 def unwrap_response(guard_response: GuardResponse) -> TornadoGuardResponse:
     if isinstance(guard_response, TornadoGuardResponse):
         return guard_response
+    headers = dict(guard_response.headers)
+    if not any(name.lower() == "content-type" for name in headers):
+        # a foreign response that names no type must not be sniffed or served as html
+        headers["Content-Type"] = "text/plain; charset=utf-8"
     return TornadoGuardResponse(
         status_code=guard_response.status_code,
-        headers=dict(guard_response.headers),
+        headers=headers,
         body=guard_response.body,
     )
 

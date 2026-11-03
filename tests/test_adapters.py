@@ -194,3 +194,22 @@ async def test_unwrap_response_generic() -> None:
 @pytest.fixture
 def anyio_backend() -> str:
     return "asyncio"
+
+
+class _ForeignResponse:
+    def __init__(self, headers: dict[str, str]) -> None:
+        self.status_code = 200
+        self.headers = headers
+        self.body = b"<script>alert(1)</script>"
+
+
+async def test_unwrap_foreign_response_without_content_type_is_text_plain() -> None:
+    unwrapped = unwrap_response(_ForeignResponse({"X-Test": "v"}))
+    assert unwrapped.headers["Content-Type"] == "text/plain; charset=utf-8"
+    assert unwrapped.body == b"<script>alert(1)</script>"
+
+
+async def test_unwrap_foreign_response_keeps_named_content_type_any_case() -> None:
+    unwrapped = unwrap_response(_ForeignResponse({"cOnTeNt-TyPe": "application/json"}))
+    assert unwrapped.headers == {"cOnTeNt-TyPe": "application/json"}
+    assert unwrapped.body == b"<script>alert(1)</script>"
