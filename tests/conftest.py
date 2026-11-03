@@ -136,5 +136,7 @@ async def security_middleware(
 
 
 @pytest.fixture(autouse=True)
-def redis_cleanup() -> None:
+def redis_cleanup() -> Generator[None, None, None]:
+    delete_every_key_under_the_suite_prefix()
+    yield
     delete_every_key_under_the_suite_prefix()

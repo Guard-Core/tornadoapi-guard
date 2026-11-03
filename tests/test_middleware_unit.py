@@ -14,7 +14,7 @@ from guard_core.handlers.security_headers_handler import security_headers_manage
 from guard_core.models import SecurityConfig
 from tornado.web import RequestHandler
 
-from tests.redis_isolation import REDIS_URL
+from tests.redis_isolation import REDIS_URL, suite_redis_prefix
 from tornadoapi_guard import SecurityMiddleware
 from tornadoapi_guard.adapters import TornadoGuardRequest, get_guard_state
 
@@ -95,7 +95,7 @@ async def test_init_with_redis_enabled() -> None:
         geo_ip_handler=None,
         enable_redis=True,
         redis_url=REDIS_URL,
-        redis_prefix="test_init",
+        redis_prefix=suite_redis_prefix("test_init"),
         enable_penetration_detection=False,
     )
     middleware = SecurityMiddleware(config=config)
@@ -431,7 +431,7 @@ async def test_refresh_cloud_ip_ranges_redis_path() -> None:
         geo_ip_handler=None,
         enable_redis=True,
         redis_url=REDIS_URL,
-        redis_prefix="test_cloud",
+        redis_prefix=suite_redis_prefix("test_cloud"),
         enable_penetration_detection=False,
         block_cloud_providers={"AWS"},
     )

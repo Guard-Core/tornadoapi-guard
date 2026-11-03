@@ -18,6 +18,7 @@ from guard_core.handlers.ipban_handler import ip_ban_manager_for
 from guard_core.models import SecurityConfig
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError
 
+from tests.redis_isolation import suite_redis_prefix
 from tornadoapi_guard import SecurityHandler, SecurityMiddleware
 
 REDIS_URL = os.getenv("REDIS_URL") or "redis://localhost:6379"
@@ -54,7 +55,7 @@ async def _serve(
     config = SecurityConfig(
         enable_redis=True,
         redis_url=REDIS_URL,
-        redis_prefix=prefix,
+        redis_prefix=suite_redis_prefix(prefix),
         trusted_proxies=proxies,
         enable_rate_limiting=False,
         enable_penetration_detection=False,
@@ -94,8 +95,8 @@ async def test_a_ban_in_a_handler_goes_through_the_handlers_own_app(
 ) -> None:
     seen_a: dict[str, Any] = {}
     seen_b: dict[str, Any] = {}
-    port_a, config_a, server_a = await _serve("wp136-hold:", (PROXY,), seen_a)
-    port_b, config_b, server_b = await _serve("wp136-hold:", (), seen_b)
+    port_a, config_a, server_a = await _serve("wp136-hold", (PROXY,), seen_a)
+    port_b, config_b, server_b = await _serve("wp136-hold", (), seen_b)
     servers.extend([server_a, server_b])
     try:
         assert await _get(port_a, "/ban") == 200
@@ -114,7 +115,7 @@ async def test_a_raising_handler_leaves_no_scope_for_the_next_request(
     servers: list[tornado.httpserver.HTTPServer],
 ) -> None:
     seen: dict[str, Any] = {}
-    port, config, server = await _serve("wp136-boom:", (), seen)
+    port, config, server = await _serve("wp136-boom", (), seen)
     servers.append(server)
 
     assert await _get(port, "/boom") == 500

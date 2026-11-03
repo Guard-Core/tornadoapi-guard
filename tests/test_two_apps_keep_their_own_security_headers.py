@@ -11,6 +11,7 @@ import tornado.web
 from guard_core.models import SecurityConfig
 from tornado.httpclient import AsyncHTTPClient
 
+from tests.redis_isolation import suite_redis_prefix
 from tornadoapi_guard import SecurityHandler, SecurityMiddleware
 
 ORIGIN_A = "https://a.example"
@@ -30,7 +31,7 @@ async def _serve(
         config=SecurityConfig(
             enable_redis=redis,
             redis_url=REDIS_URL if redis else None,
-            redis_prefix="wp102:",
+            redis_prefix=suite_redis_prefix("wp102"),
             enable_rate_limiting=False,
             enable_ip_banning=False,
             enable_cors=True,
