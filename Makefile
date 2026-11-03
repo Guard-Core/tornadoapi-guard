@@ -18,6 +18,7 @@ install-dev:
 .PHONY: lock
 lock:
 	@uv lock
+	@uv lock --directory tools/semgrep
 	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
 
 
@@ -25,6 +26,7 @@ lock:
 .PHONY: upgrade
 upgrade:
 	@uv lock --upgrade
+	@uv lock --directory tools/semgrep --upgrade
 	@uv sync --all-extras
 	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
 
@@ -149,9 +151,17 @@ security: bandit safety pip-audit
 quality: lint vulture radon xenon
 	@echo "All code quality checks completed."
 
+# Static analysis with Semgrep
+.PHONY: semgrep
+semgrep:
+	@echo "Running Semgrep static analysis..."
+	@echo ''
+	@uv run --project tools/semgrep --locked semgrep --config=auto tornadoapi_guard
+	@find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".ruff_cache" -o -name ".mypy_cache" \) -exec rm -rf {} + 2>/dev/null; find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null; true
+
 # Run all analysis tools
 .PHONY: analysis
-analysis: deptry
+analysis: deptry semgrep
 	@echo "All analysis tools completed."
 
 # Run all checks (linting, security, quality, and analysis)
