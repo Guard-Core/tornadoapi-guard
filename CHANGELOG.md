@@ -6,6 +6,8 @@ ___
 Unreleased
 ----------
 
+- **Fixed** - **`route_template(path)` descends into a nested `Application` rule (LEDGER 6.565).** A rule whose target is another `Application` gave the outer rule's pattern (`/sub/(.*)$`) instead of the inner rule's whole template, so a `detection_exclusion` path parameter of the inner route never matched. Nested routers already gave the whole template.
+
 - **Fixed** - **`route_template(path)` is cached per (Host, path), not per path (LEDGER 6.567, 6.361 R5-6).** With `add_handlers` virtual hosts the first host's template was served to every other host. The key now carries the request's Host, with the same 4096-entry bound and the hashed form for an over-long path or Host.
 
 - **Fixed** - **The tornado adapter builds its probe requests the Tornado 6.6 way (LEDGER 6.510).** The middleware builds its internal route-probe requests with `start_line=RequestStartLine(...)` and the `Host` header instead of the `method`, `uri`, `version` and `host` arguments of `HTTPServerRequest`, which Tornado 6.6 deprecates (a `-W error` run turned them into failures: 47 tests, and a static-file or route-template probe that failed closed to the unprobed path). It works on Tornado 6.5.10 and 6.6.

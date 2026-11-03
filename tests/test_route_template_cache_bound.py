@@ -4,7 +4,7 @@ from collections.abc import Iterable
 import pytest
 from guard_core.models import SecurityConfig
 from tornado.httputil import HTTPServerRequest
-from tornado.routing import Rule
+from tornado.routing import PathMatches, Rule, RuleRouter
 from tornado.web import Application, RequestHandler
 
 import tornadoapi_guard.middleware as middleware_module
@@ -136,4 +136,39 @@ def test_a_long_host_is_keyed_by_its_hash_and_still_answered_from_the_cache(
         isinstance(part, int) or len(part) <= 256
         for key in middleware._route_template_cache
         for part in key
+    )
+
+
+def test_a_nested_router_gives_the_whole_template_of_the_innermost_rule() -> None:
+    middleware = SecurityMiddleware(
+        config=SecurityConfig(enable_redis=False, trusted_proxies=[])
+    )
+    inner = RuleRouter(
+        [
+            Rule(
+                PathMatches(r"/orgs/(?P<org>[0-9]+)/items/(?P<item_id>[0-9]+)"),
+                _Handler,
+            )
+        ]
+    )
+    middleware._routing_application = Application(
+        [Rule(PathMatches(r"/orgs/(?P<org>[0-9]+)/.*"), inner)]
+    )
+
+    assert middleware.route_template("/orgs/5/items/9") == (
+        "/orgs/(?P<org>[0-9]+)/items/(?P<item_id>[0-9]+)$"
+    )
+
+
+def test_a_nested_application_gives_the_whole_template_of_the_innermost_rule() -> None:
+    middleware = SecurityMiddleware(
+        config=SecurityConfig(enable_redis=False, trusted_proxies=[])
+    )
+    inner = Application([(r"/sub/items/(?P<item_id>[0-9]+)", _Handler)])
+    middleware._routing_application = Application(
+        [Rule(PathMatches(r"/sub/.*"), inner)]
+    )
+
+    assert middleware.route_template("/sub/items/5") == (
+        "/sub/items/(?P<item_id>[0-9]+)$"
     )

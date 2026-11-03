@@ -96,15 +96,23 @@ def _bounded_key_part(text: str) -> str | int:
     return text if len(text) <= _ROUTE_TEMPLATE_KEY_MAX_LENGTH else hash(text)
 
 
+def _nested_rules(target: object) -> Iterable[Rule] | None:
+    # A nested Application routes through its own default router, whose rules are
+    # the ones its requests match.
+    if isinstance(target, Application):
+        return target.default_router.rules
+    return getattr(target, "rules", None)
+
+
 def _rule_count(rules: Iterable[Rule]) -> int:
-    return sum(1 + _rule_count(getattr(rule.target, "rules", ())) for rule in rules)
+    return sum(1 + _rule_count(_nested_rules(rule.target) or ()) for rule in rules)
 
 
 def _matched_template(rules: Iterable[Rule], request: HTTPServerRequest) -> str | None:
     for rule in rules:
         if rule.matcher.match(request) is None:
             continue
-        nested = getattr(rule.target, "rules", None)
+        nested = _nested_rules(rule.target)
         if nested is not None:
             inner = _matched_template(nested, request)
             if inner is not None:
