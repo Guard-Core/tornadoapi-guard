@@ -6,6 +6,8 @@ ___
 Unreleased
 ----------
 
+- **Fixed** - **On Python 3.10, tornado 6.5.10 carries three advisories with no fixed release, and the CVE gate now says so (LEDGER 6.512, D-257).** GHSA-pcg2-g6cj-q92c (quadratic CPU on folded header lines), GHSA-r4j5-9xpp-3985 (chunked bodies with many small chunks block the event loop) and GHSA-pw9p-v7r6-gx4p (open redirect in `tornado.web.RedirectHandler`) are fixed only in tornado 6.6, which requires Python 3.11 or later. The first two run in tornado's HTTP/1 parser before any handler code, so the adapter cannot stop them; the third reaches apps that route to `RedirectHandler` (the adapter does not use it). Python 3.10 stays supported. Use Python 3.11 or later to get tornado 6.6; on 3.10, tornado's `max_header_size` (default 65536) and `max_body_size` server settings bound the cost of the first two, they do not fix them. The three suppressions in `osv-scanner.toml` now state that they reach 3.10 users, and they expire on 2026-12-15, when the PyPI and OSV reads are repeated.
+
 - **Fixed** - **`route_template(path)` descends into a nested `Application` rule (LEDGER 6.565).** A rule whose target is another `Application` gave the outer rule's pattern (`/sub/(.*)$`) instead of the inner rule's whole template, so a `detection_exclusion` path parameter of the inner route never matched. Nested routers already gave the whole template.
 
 - **Fixed** - **`route_template(path)` is cached per (Host, path), not per path (LEDGER 6.567, 6.361 R5-6).** With `add_handlers` virtual hosts the first host's template was served to every other host. The key now carries the request's Host, with the same 4096-entry bound and the hashed form for an over-long path or Host.
