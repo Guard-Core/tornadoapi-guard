@@ -4,7 +4,6 @@ from collections.abc import Mapping, MutableMapping
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
-from weakref import WeakKeyDictionary
 
 from guard_core.protocols.response_protocol import GuardResponse
 
@@ -12,16 +11,17 @@ if TYPE_CHECKING:
     from tornado.web import RequestHandler
 
 
-_guard_state_store: WeakKeyDictionary[RequestHandler, SimpleNamespace] = (
-    WeakKeyDictionary()
-)
+_GUARD_STATE_ATTRIBUTE = "_guard_state"
 
 
 def get_guard_state(handler: RequestHandler) -> SimpleNamespace:
-    state = _guard_state_store.get(handler)
+    # Held by the handler itself, so the handler and its state die together
+    # once the request is done: no module-level root reaches a finished request.
+    attributes = vars(handler)
+    state = attributes.get(_GUARD_STATE_ATTRIBUTE)
     if state is None:
         state = SimpleNamespace()
-        _guard_state_store[handler] = state
+        attributes[_GUARD_STATE_ATTRIBUTE] = state
     return state
 
 

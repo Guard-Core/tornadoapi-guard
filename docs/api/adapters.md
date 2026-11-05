@@ -229,24 +229,22 @@ Per-handler State
 
 `TornadoGuardRequest.state` returns a `SimpleNamespace` that the middleware uses to stash per-request data: the guard request itself, the resolved route config, the extracted client IP, and the request start time. Behavioral hooks, the response pass, and custom validators read from this namespace.
 
-The storage is backed by a module-level `WeakKeyDictionary` keyed by the handler instance:
+The state is stored as an attribute of the handler instance itself:
 
 ```python
-_guard_state_store: WeakKeyDictionary[Any, SimpleNamespace] = WeakKeyDictionary()
-
-
 def get_guard_state(handler: RequestHandler) -> SimpleNamespace:
-    state = _guard_state_store.get(handler)
+    attributes = vars(handler)
+    state = attributes.get("_guard_state")
     if state is None:
         state = SimpleNamespace()
-        _guard_state_store[handler] = state
+        attributes["_guard_state"] = state
     return state
 ```
 
-The `WeakKeyDictionary` is an implementation detail - do not rely on it. What you should know:
+There is no module-level store, so no module-level root reaches a finished request's handler: the handler and its state form a cycle that the garbage collector frees once the request is done. The attribute is an implementation detail - do not rely on it, use `get_guard_state(handler)`. What you should know:
 
 - State is scoped to a **single handler instance**, which in Tornado means a single request.
-- The entry is cleaned up automatically when the handler is garbage-collected at the end of the request.
+- The state is freed together with the handler at the end of the request.
 - Two different handlers never share state, so it is safe to stash mutable data there.
 - Inside a `custom_request_check`, use `request.state.<attr>` to read and write.
 
