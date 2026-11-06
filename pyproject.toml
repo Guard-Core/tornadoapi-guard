@@ -38,7 +38,7 @@ keywords = [
 dependencies = [
     "tornado>=6.6; python_version >= '3.11'",
     "tornado>=6.5.10; python_version < '3.11'",
-    "guard-core>=4.4.0",
+    "guard-core>=5.0.0,<6",
 ]
 
 [project.urls]
@@ -257,6 +257,10 @@ ignore_names = [
     "__*__",
     "Config",
     "Field",
+    # IdleBoundedBodyReader protocol parameter; Tornado has the whole body buffered
+    "idle_timeout",
+    # tornado HTTPConnection.set_close_callback parameter; the stub connection ignores it
+    "callback",
 ]
 sort_by_size = true
 

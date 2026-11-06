@@ -13,6 +13,8 @@ ___
 Unreleased
 ----------
 
+- **Fixed** - **The `guard-core` floor is `>=5.0.0,<6` (LEDGER 6.356, 6.537, D-14).** This release's code uses engine names that guard-core 4.4.x does not have, so an environment that kept 4.4.x imported a broken package. Upgrading now installs guard-core 5.x and stops below the next major. An install that must stay on guard-core 4.x stays on the previous release of this package. The lock follows the floor once guard-core 5.0.0 is published.
+
 - **Fixed** - **The tornado adapter builds its probe requests the Tornado 6.6 way (LEDGER 6.510).** The middleware builds its internal route-probe requests with `start_line=RequestStartLine(...)` and the `Host` header instead of the `method`, `uri`, `version` and `host` arguments of `HTTPServerRequest`, which Tornado 6.6 deprecates (a `-W error` run turned them into failures: 47 tests, and a static-file or route-template probe that failed closed to the unprobed path). It works on Tornado 6.5.10 and 6.6.
 
 - **Fixed** - **Every shipped dependency declares a lower bound with no known advisory (LEDGER 6.510).** The declared floor is now `tornado>=6.6` on Python 3.11 and later and `tornado>=6.5.10` on Python 3.10 (it had none). Tornado 6.6 requires Python 3.11 and no 6.5.x release carries its fixes (the upstream `branch6.5` equals v6.5.10), so on Python 3.10 three advisories stay open and listed in `osv-scanner.toml` with an expiry; Python 3.10 support is kept. The suite passes at these floors on Python 3.10 and 3.11.
