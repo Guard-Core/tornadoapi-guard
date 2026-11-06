@@ -24,7 +24,7 @@ from tornadoapi_guard import SecurityHandler, SecurityMiddleware
 
 
 class _DeadRedis(Redis):
-    async def execute_command(self, *args: Any, **options: Any) -> Any:
+    async def execute_command(self, *args: Any, **_options: Any) -> Any:
         raise RedisConnectionError("Redis went away")
 
 

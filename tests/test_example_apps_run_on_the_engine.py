@@ -26,7 +26,7 @@ class _CountryStubGeoIPHandler:
         max_age: int = 86400,
         download_url: str | None = None,
     ) -> None:
-        return
+        self.download_url = download_url
 
     @property
     def is_initialized(self) -> bool:

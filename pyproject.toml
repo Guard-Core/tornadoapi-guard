@@ -257,6 +257,10 @@ ignore_names = [
     "__*__",
     "Config",
     "Field",
+    # IdleBoundedBodyReader protocol parameter; Tornado has the whole body buffered
+    "idle_timeout",
+    # tornado HTTPConnection.set_close_callback parameter; the stub connection ignores it
+    "callback",
 ]
 sort_by_size = true
 
