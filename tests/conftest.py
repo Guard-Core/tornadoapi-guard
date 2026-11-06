@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncGenerator, Generator
+import sys
+from collections.abc import AsyncGenerator, Generator, Iterator
 from typing import Any, NoReturn
 
 import pytest
@@ -18,6 +19,7 @@ from guard_core.handlers.security_headers_handler import security_headers_manage
 from guard_core.handlers.suspatterns_handler import sus_patterns_handler
 from guard_core.models import SecurityConfig
 
+from tests import network_guard, thread_guard
 from tests.redis_isolation import (
     REDIS_PREFIX,
     REDIS_URL,
@@ -27,6 +29,9 @@ from tests.redis_isolation import (
     refused_connections,
 )
 from tornadoapi_guard import SecurityMiddleware
+
+network_guard.install()
+thread_guard.install()
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "")
 
@@ -145,3 +150,19 @@ def redis_cleanup() -> None:
 def redis_cleanup_at_session_end() -> Generator[None, None, None]:
     yield
     delete_every_key_under_the_suite_prefix()
+
+
+@pytest.fixture(autouse=True)
+def _no_outbound_network() -> Iterator[None]:
+    network_guard.reset()
+    yield
+    violations = network_guard.drain()
+    assert not violations, "test reached the network:\n" + "\n".join(violations)
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    thread_guard.stop_the_shared_regex_pools()
+    leaked = thread_guard.leaked_threads()
+    if leaked:
+        sys.stderr.write(f"\nthreads the tests left running: {leaked}\n")
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
