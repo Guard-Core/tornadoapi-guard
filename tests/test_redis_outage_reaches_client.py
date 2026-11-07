@@ -14,6 +14,7 @@ import pytest
 import tornado.httpserver
 import tornado.netutil
 import tornado.web
+from guard_core.handlers import _redis_shared_clients as shared_clients
 from guard_core.models import SecurityConfig
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
@@ -53,19 +54,26 @@ async def _status_and_retry_after_after_redis_died(
         security_middleware=middleware,
     )
     await middleware.initialize()
+    handler = middleware.redis_handler
+    assert handler is not None
     sockets = tornado.netutil.bind_sockets(0, "127.0.0.1")
     server = tornado.httpserver.HTTPServer(app)
     server.add_sockets(sockets)
     base = f"http://127.0.0.1:{sockets[0].getsockname()[1]}"
+    live_redis = None
     try:
         client = AsyncHTTPClient()
         warm = await client.fetch(f"{base}/open", raise_error=False)
         assert warm.code == 200
-        assert middleware.redis_handler is not None
-        middleware.redis_handler._redis = _DeadRedis()
+        live_redis = handler._redis
+        handler._redis = _DeadRedis()
         response = await client.fetch(f"{base}{path}", raise_error=False)
         return response.code, response.headers.get("Retry-After")
     finally:
+        if live_redis is not None:
+            # close() releases the client the shared registry holds and closes it.
+            handler._redis = live_redis
+            await handler.close()
         server.stop()
         await middleware.reset()
 
@@ -89,3 +97,30 @@ async def test_redis_fail_open_admits_during_a_runtime_outage(path: str) -> None
         path, redis_fail_open=True
     )
     assert status == 200
+
+
+@pytest.mark.parametrize("path", ["/open", "/health"])
+async def test_a_runtime_outage_leaves_no_redis_connection_open(
+    path: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    opened: list[Any] = []
+    open_client = shared_clients.open_client
+
+    def record_client(*args: Any, **kwargs: Any) -> Any:
+        result = open_client(*args, **kwargs)
+        opened.append(result[0])
+        return result
+
+    monkeypatch.setattr(shared_clients, "open_client", record_client)
+    await _status_and_retry_after_after_redis_died(path)
+    assert opened
+    still_connected = [
+        connection
+        for client in opened
+        for connection in (
+            *client.connection_pool._available_connections,
+            *client.connection_pool._in_use_connections,
+        )
+        if connection.is_connected
+    ]
+    assert not still_connected
