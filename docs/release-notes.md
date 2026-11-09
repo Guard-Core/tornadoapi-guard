@@ -75,6 +75,8 @@ Unreleased
 
 - **Fixed (test)** - **A test pins the no-address client under `passive_mode`.** `tests/test_unknown_client_passive_mode.py` checks that a request from a client with no address is refused with `403` under `fail_secure` and admitted under `passive_mode`, the behavior the docs describe; the passive arm needs guard-core's change that admits and logs a client with no address in passive mode.
 
+- **Fixed** - **A response a custom hook returns without a `Content-Type` is served as `text/plain; charset=utf-8` (LEDGER 6.581, D-252).** `unwrap_response` handed the framework default type (`text/html`, or a sniffed one) to a foreign `GuardResponse` that named none, so a `custom_request_check` response that echoes request text was a reflected XSS. The unwrapped response now carries `text/plain; charset=utf-8` when no header named `Content-Type` in any case is present; a `Content-Type` the hook sets, in any case, is kept as it is. Behavior change for a hook that returned HTML or JSON without naming the type: it now has to set `Content-Type` itself.
+
 ___
 
 v2.0.0 (2026-10-15)
