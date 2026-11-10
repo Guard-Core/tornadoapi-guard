@@ -10,6 +10,7 @@ import tornado.httpserver
 import tornado.netutil
 import tornado.web
 from guard_core.models import SecurityConfig
+from redis.asyncio.connection import AbstractConnection
 from tornado.httpclient import AsyncHTTPClient
 
 from tests.redis_isolation import suite_redis_prefix
@@ -38,7 +39,9 @@ def _app() -> tornado.web.Application:
     )
 
 
-async def _status_of_one_request(app: tornado.web.Application) -> int:
+async def _status_of_one_request(
+    app: tornado.web.Application, close_redis: bool = False
+) -> int:
     sockets = tornado.netutil.bind_sockets(0, "127.0.0.1")
     port = sockets[0].getsockname()[1]
     server = tornado.httpserver.HTTPServer(app)
@@ -48,13 +51,31 @@ async def _status_of_one_request(app: tornado.web.Application) -> int:
     )
     server.stop()
     await server.close_all_connections()
+    if close_redis:
+        await app.settings["security_middleware"].redis_handler.close()
     return int(response.code)
+
+
+def _serve_three_loops(app: tornado.web.Application) -> list[int]:
+    return [
+        asyncio.run(_status_of_one_request(app, close_redis=index == 2))
+        for index in range(3)
+    ]
+
+
+def _connected_redis_connections() -> int:
+    gc.collect()
+    return sum(
+        1
+        for o in gc.get_objects()
+        if isinstance(o, AbstractConnection) and o.is_connected
+    )
 
 
 def test_the_first_request_of_a_second_event_loop_is_served_not_a_503() -> None:
     app = _app()
 
-    statuses = [asyncio.run(_status_of_one_request(app)) for _ in range(3)]
+    statuses = _serve_three_loops(app)
 
     assert statuses == [200, 200, 200]
 
@@ -63,8 +84,16 @@ def test_a_client_left_by_a_finished_event_loop_leaks_no_socket() -> None:
     app = _app()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", ResourceWarning)
-        for _ in range(3):
-            asyncio.run(_status_of_one_request(app))
+        _serve_three_loops(app)
         gc.collect()
 
     assert [str(w.message) for w in caught if w.category is ResourceWarning] == []
+
+
+def test_the_last_event_loop_closes_its_redis_connection() -> None:
+    before = _connected_redis_connections()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ResourceWarning)
+        _serve_three_loops(_app())
+
+    assert _connected_redis_connections() == before
