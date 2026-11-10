@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncGenerator
+from datetime import datetime
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -270,6 +271,20 @@ async def test_check_time_window_helper(
         result = await simple_middleware._check_time_window({})
     assert result is False
     assert "request denied" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("hour", "allowed"), [(3, False), (10, True), (20, False)], ids=["3", "10", "20"]
+)
+async def test_time_window_single_digit_hour_bound_is_compared_as_time(
+    simple_middleware: SecurityMiddleware, hour: int, allowed: bool
+) -> None:
+    with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2026, 1, 1, hour, 0)
+        result = await simple_middleware._check_time_window(
+            {"start": "9:00", "end": "17:00"}
+        )
+    assert result is allowed
 
 
 async def test_check_route_ip_access_helper(
