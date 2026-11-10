@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from ipaddress import ip_address
 from typing import Any
@@ -88,10 +89,13 @@ _ENABLE_REDIS = bool(_REDIS_URL)
 def require_ipinfo_token() -> str:
     token = os.environ.get("IPINFO_TOKEN", "").strip()
     if not token:
-        raise SystemExit(
+        print(
             "IPINFO_TOKEN is not set: the country routes need a GeoIP source. "
-            "Get a free token at https://ipinfo.io/signup and export IPINFO_TOKEN."
+            "Get a free token at https://ipinfo.io/signup and export IPINFO_TOKEN.",
+            file=sys.stderr,
         )
+        # gunicorn halts on worker exit 3; any other code is respawned
+        raise SystemExit(3)
     return token
 
 
