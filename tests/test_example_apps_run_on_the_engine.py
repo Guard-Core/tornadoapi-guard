@@ -10,7 +10,7 @@ import tornado.web
 from tornado.httpclient import AsyncHTTPClient
 from tornado.routing import PathMatches
 
-from tests.redis_isolation import REDIS_PREFIX, REDIS_URL
+from tests.redis_isolation import REDIS_PREFIX, REDIS_URL, close_redis_of
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 BLOCKED_COUNTRY_CLIENT = {"X-Forwarded-For": "10.0.0.5, 10.0.0.9"}
@@ -110,6 +110,7 @@ async def example_server(
     finally:
         server.stop()
         await module.security_middleware.reset()
+        await close_redis_of(module.security_middleware)
 
 
 @pytest.mark.parametrize("example_server", EXAMPLE_NAMES, indirect=True)

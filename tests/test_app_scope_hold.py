@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import tornado.httpserver
@@ -18,7 +18,7 @@ from guard_core.handlers.ipban_handler import ip_ban_manager_for
 from guard_core.models import SecurityConfig
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError
 
-from tests.redis_isolation import suite_redis_prefix
+from tests.redis_isolation import close_redis_of, suite_redis_prefix
 from tornadoapi_guard import SecurityHandler, SecurityMiddleware
 
 REDIS_URL = os.getenv("REDIS_URL") or "redis://localhost:6379"
@@ -88,6 +88,8 @@ async def servers() -> AsyncGenerator[list[tornado.httpserver.HTTPServer], None]
     yield started
     for server in started:
         server.stop()
+        app = cast(tornado.web.Application, server.request_callback)
+        await close_redis_of(app.settings["security_middleware"])
 
 
 async def test_a_ban_in_a_handler_goes_through_the_handlers_own_app(

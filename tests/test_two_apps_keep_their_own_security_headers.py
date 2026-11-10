@@ -11,7 +11,7 @@ import tornado.web
 from guard_core.models import SecurityConfig
 from tornado.httpclient import AsyncHTTPClient
 
-from tests.redis_isolation import suite_redis_prefix
+from tests.redis_isolation import close_redis_of, suite_redis_prefix
 from tornadoapi_guard import SecurityHandler, SecurityMiddleware
 
 ORIGIN_A = "https://a.example"
@@ -72,6 +72,8 @@ async def two_apps(request: pytest.FixtureRequest) -> AsyncGenerator[Any, None]:
         server_b.stop()
         await mw_a.reset()
         await mw_b.reset()
+        await close_redis_of(mw_a)
+        await close_redis_of(mw_b)
 
 
 async def test_two_apps_in_one_process_each_answer_with_their_own_headers(

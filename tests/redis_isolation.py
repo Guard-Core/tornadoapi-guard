@@ -16,6 +16,11 @@ LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "::1")
 refused_connections: list[tuple[Any, ...]] = []
 
 
+async def close_redis_of(middleware: Any) -> None:
+    if middleware.redis_handler is not None:
+        await middleware.redis_handler.close()
+
+
 def _is_forbidden_default_port(address: object) -> bool:
     if (urlparse(REDIS_URL).port or DEFAULT_REDIS_PORT) == DEFAULT_REDIS_PORT:
         return False
