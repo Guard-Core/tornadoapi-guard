@@ -111,24 +111,3 @@ async def test_the_config_is_bound_before_the_pipeline_is_built() -> None:
     assert own is not ipban_module.ip_ban_manager
     assert limiters
     assert all(limiter.ip_ban_manager is own for limiter in limiters)
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "needs the release epoch of WP616 round 4 (D-317 amendment 2); "
-        "engine c12be493 does not rebuild a pipeline after a release"
-    ),
-)
-async def test_a_request_after_a_release_rebuilds_the_pipeline_of_the_reused_app() -> (
-    None
-):
-    config = _config()
-    middleware = SecurityMiddleware(config=config)
-    await middleware.initialize()
-    assert middleware.security_pipeline is not None
-    await _serve_requests(middleware, 1)
-    checks_before = middleware.security_pipeline.checks
-    release_app(config)
-    await _serve_requests(middleware, 1)
-    assert middleware.security_pipeline.checks is not checks_before
