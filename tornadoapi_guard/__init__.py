@@ -18,6 +18,7 @@ from guard_core import (
     SecurityHeadersManager,
     endpoint_rate_limit_key_problems,
     ip_ban_manager,
+    release_app,
     security_headers_manager,
     sus_patterns_handler,
 )
@@ -95,6 +96,7 @@ __all__ = [
     "SecurityHeadersManager",
     "sus_patterns_handler",
     "endpoint_rate_limit_key_problems",
+    "release_app",
     "GeoIPHandler",
     "RedisHandlerProtocol",
     "GuardRequest",
