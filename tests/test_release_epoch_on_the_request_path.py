@@ -112,7 +112,7 @@ async def test_two_concurrent_first_requests_after_a_release_initialize_once(
         )
         release_app(config)
         statuses = await asyncio.gather(_status(url), _status(url))
-    assert statuses == [200, 200]
+    assert list(statuses) == [200, 200]
     assert len(calls) == 1
 
 
@@ -145,5 +145,6 @@ async def test_a_ban_another_worker_wrote_in_redis_is_refused_after_a_release() 
             assert ip_ban_manager_for(config).redis_handler is not None
         finally:
             await worker.close()
-            if middleware.handler_initializer.redis_handler is not None:
-                await middleware.handler_initializer.redis_handler.close()
+            held = middleware.handler_initializer.redis_handler
+            if isinstance(held, RedisManager):
+                await held.close()
