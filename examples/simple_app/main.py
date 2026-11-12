@@ -713,6 +713,10 @@ class AdvancedSuspiciousHandler(JSONHandler):
         )
 
 
+# 127.0.0.1 is added to emergency_whitelist only when absent, and removed on disable
+# only when this route added it, so a startup or dashboard whitelist is never edited.
+_ADMIN_ADDED_LOOPBACK = {"added": False}
+
 DYNAMIC_RULES_OWN_EMERGENCY_MODE = (
     "this app takes emergency mode from the dashboard's dynamic rules; a local "
     "switch would be reverted at the next rule update"
@@ -812,12 +816,24 @@ class AdminEmergencyModeHandler(JSONHandler):
         if security_config.enable_dynamic_rules:
             self.write_json({"detail": DYNAMIC_RULES_OWN_EMERGENCY_MODE}, 409)
             return
+        added: list[str] = []
+        removed: list[str] = []
         if enable and "127.0.0.1" not in security_config.emergency_whitelist:
             security_config.emergency_whitelist = [
                 *security_config.emergency_whitelist,
                 "127.0.0.1",
             ]
+            _ADMIN_ADDED_LOOPBACK["added"] = True
+            added = ["127.0.0.1"]
         security_config.emergency_mode = enable
+        if not enable and _ADMIN_ADDED_LOOPBACK["added"]:
+            security_config.emergency_whitelist = [
+                entry
+                for entry in security_config.emergency_whitelist
+                if entry != "127.0.0.1"
+            ]
+            _ADMIN_ADDED_LOOPBACK["added"] = False
+            removed = ["127.0.0.1"]
         state = "enabled" if security_config.emergency_mode else "disabled"
         self.write_json(
             {
@@ -825,6 +841,8 @@ class AdminEmergencyModeHandler(JSONHandler):
                 "details": {
                     "emergency_mode": security_config.emergency_mode,
                     "emergency_whitelist": list(security_config.emergency_whitelist),
+                    "added_to_emergency_whitelist": added,
+                    "removed_from_emergency_whitelist": removed,
                     "timestamp": datetime.now(timezone.utc),
                 },
             }

@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 import tornado.httpserver
@@ -154,13 +155,14 @@ async def test_emergency_switch_refuses_a_body_that_is_not_a_boolean(
 
 
 async def test_emergency_switch_defers_to_the_dashboard_when_dynamic_rules_are_on(
-    example: tuple[str, ModuleType],
+    example: tuple[str, ModuleType], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     base_url, module = example
+    monkeypatch.setattr("guard_agent.GuardAgentHandler", lambda config: AsyncMock())
     config = module.security_config
-    config.agent_api_key = "test-key"
-    config.enable_agent = True
-    config.enable_dynamic_rules = True
+    monkeypatch.setattr(config, "agent_api_key", "test-key")
+    monkeypatch.setattr(config, "enable_agent", True)
+    monkeypatch.setattr(config, "enable_dynamic_rules", True)
     response = await AsyncHTTPClient().fetch(
         base_url + "/admin/emergency-mode",
         method="PUT",
@@ -196,3 +198,39 @@ async def test_stats_come_from_the_engine_and_carry_no_invented_numbers(
         after
     )
     assert after["active_rules"]["rate_limit"] == module.security_config.rate_limit
+
+
+async def _switch(base_url: str, enable: bool) -> dict[str, Any]:
+    response = await AsyncHTTPClient().fetch(
+        base_url + "/admin/emergency-mode",
+        method="PUT",
+        body=json.dumps({"enable": enable}),
+        raise_error=False,
+    )
+    payload: dict[str, Any] = json.loads(response.body)
+    details: dict[str, Any] = payload["details"]
+    return details
+
+
+async def test_emergency_switch_reports_the_whitelist_entry_it_adds_and_removes(
+    example: tuple[str, ModuleType],
+) -> None:
+    base_url, module = example
+    on = await _switch(base_url, True)
+    assert on["added_to_emergency_whitelist"] == ["127.0.0.1"]
+    assert on["emergency_whitelist"] == ["127.0.0.1"]
+    off = await _switch(base_url, False)
+    assert off["removed_from_emergency_whitelist"] == ["127.0.0.1"]
+    assert module.security_config.emergency_whitelist == []
+
+
+async def test_emergency_switch_leaves_a_whitelist_it_did_not_extend_alone(
+    example: tuple[str, ModuleType], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    base_url, module = example
+    monkeypatch.setattr(module.security_config, "emergency_whitelist", ["127.0.0.1"])
+    on = await _switch(base_url, True)
+    off = await _switch(base_url, False)
+    assert on["added_to_emergency_whitelist"] == []
+    assert off["removed_from_emergency_whitelist"] == []
+    assert module.security_config.emergency_whitelist == ["127.0.0.1"]
