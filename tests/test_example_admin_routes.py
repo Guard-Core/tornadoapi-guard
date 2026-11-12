@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import time
 from collections.abc import AsyncGenerator
 from pathlib import Path
@@ -68,3 +69,38 @@ async def test_clear_cache_route_drops_the_bans_and_the_rate_windows(
     assert not await bans.is_ip_banned(BANNED_IP)
     assert not windows.request_timestamps.get(WINDOWED_IP)
     assert b"geo_cache" not in response.body
+
+
+async def test_unban_route_lifts_the_ban_it_names(
+    example: tuple[str, ModuleType],
+) -> None:
+    base_url, module = example
+    assert module.security_config.redis_prefix != "tornadoapi_guard:"
+    bans = ip_ban_manager_for(module.security_config)
+    await bans.ban_ip(BANNED_IP, 300, "test")
+    assert await bans.is_ip_banned(BANNED_IP)
+
+    response = await AsyncHTTPClient().fetch(
+        base_url + "/admin/unban-ip",
+        method="POST",
+        body=json.dumps({"ip": BANNED_IP}),
+        raise_error=False,
+    )
+
+    assert response.code == 200
+    assert not await bans.is_ip_banned(BANNED_IP)
+    assert json.loads(response.body)["details"]["ip"] == BANNED_IP
+
+
+@pytest.mark.parametrize("garbage", ["not-an-ip", "203.0.113.0/24", "", "1.2.3.999"])
+async def test_unban_route_refuses_input_that_is_not_an_ip(
+    example: tuple[str, ModuleType], garbage: str
+) -> None:
+    base_url, _ = example
+    response = await AsyncHTTPClient().fetch(
+        base_url + "/admin/unban-ip",
+        method="POST",
+        body=json.dumps({"ip": garbage}),
+        raise_error=False,
+    )
+    assert response.code == 400

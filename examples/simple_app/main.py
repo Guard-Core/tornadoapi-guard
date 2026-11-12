@@ -719,8 +719,15 @@ class AdminUnbanHandler(JSONHandler):
             data = json.loads(self.request.body or b"{}")
         except json.JSONDecodeError:
             data = {}
-        ip = data.get("ip", "")
-        logger.info(f"Unbanning IP: {ip}")
+        if not isinstance(data, dict):
+            data = {}
+        try:
+            ip = str(ip_address(str(data.get("ip", "")).strip()))
+        except ValueError:
+            self.write_json({"detail": "Not an IP address"}, status_code=400)
+            return
+        await ip_ban_manager_for(security_config).unban_ip(ip)
+        logger.info("Unbanning IP: %s", ip)
         self.write_json(
             {
                 "message": f"IP {ip} has been unbanned",
