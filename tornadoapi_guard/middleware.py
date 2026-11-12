@@ -45,6 +45,7 @@ from tornado.web import (
     StaticFileHandler,
 )
 
+from tornadoapi_guard._declared_path_params import warn_at_first_request
 from tornadoapi_guard._route_gate_host import (
     hold_route_gate_host,
     release_route_gate_host,
@@ -220,6 +221,10 @@ class SecurityMiddleware:
         self._build_event_bus_and_contexts()
 
         self._initialized = False
+        # shortcut: an id can be reused by a later Application once the first is
+        # collected, which skips that one's check; upgrade if applications are made per
+        # request
+        self._path_params_checked: set[int] = set()
         self._init_lock = asyncio.Lock()
 
     def _is_initialized(self) -> bool:
@@ -589,6 +594,13 @@ class SecurityMiddleware:
         self, handler: RequestHandler
     ) -> GuardResponse | None:
         guard_request = TornadoGuardRequest(handler)
+        if id(handler.application) not in self._path_params_checked:
+            self._path_params_checked.add(id(handler.application))
+            warn_at_first_request(
+                handler.application,
+                self.guard_decorator
+                or handler.application.settings.get("guard_decorator"),
+            )
         try:
             await self._ensure_initialized()
         except GuardRedisError as e:
