@@ -750,9 +750,12 @@ class AdminUnbanHandler(JSONHandler):
 class AdminStatsHandler(JSONHandler):
     @guard_decorator.require_ip(whitelist=["127.0.0.1"])
     async def get(self) -> None:
-        """Reads this process's ban table (IPBanManager.banned_ips), its rate limit
-        windows (RateLimitManager.request_timestamps) and the SecurityConfig rules.
-        The engine keeps no request counters, so none are reported."""
+        """Reads this process's ban table (IPBanManager.banned_ips), its in-memory
+        rate limit windows (RateLimitManager.request_timestamps) and the
+        SecurityConfig rules. With Redis on, the windows live in Redis under
+        redis_prefix and rate_limit_windows is null; bans other workers wrote also
+        live in Redis. The engine keeps no request counters, so none are reported."""
+        redis_in_use = bool(security_config.enable_redis and security_config.redis_url)
         now = time.time()
         windows = security_middleware.rate_limit_handler.request_timestamps
         self.write_json(
@@ -764,9 +767,13 @@ class AdminStatsHandler(JSONHandler):
                     ).banned_ips.items()
                     if expiry > now
                 ),
-                "rate_limit_windows": {
-                    key: len(window) for key, window in windows.items() if window
-                },
+                "rate_limit_windows": (
+                    None
+                    if redis_in_use
+                    else {key: len(window) for key, window in windows.items() if window}
+                ),
+                "rate_limit_store": "redis" if redis_in_use else "memory",
+                "redis_prefix": security_config.redis_prefix if redis_in_use else None,
                 "active_rules": {
                     "rate_limit": security_config.rate_limit,
                     "rate_limit_window": security_config.rate_limit_window,
