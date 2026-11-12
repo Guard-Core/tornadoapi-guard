@@ -13,6 +13,7 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 from guard_core.handlers.cloud_handler import cloud_handler_for
+from guard_core.handlers.ipban_handler import ip_ban_manager_for
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
 
@@ -762,12 +763,13 @@ class AdminStatsHandler(JSONHandler):
 class AdminClearCacheHandler(JSONHandler):
     @guard_decorator.require_ip(whitelist=["127.0.0.1"])
     async def post(self) -> None:
+        """Clears all bans and rate limit windows for this app's Redis prefix."""
+        await ip_ban_manager_for(security_config).reset()
+        await security_middleware.reset()
         self.write_json(
             {
                 "message": "Security caches cleared",
-                "details": {
-                    "cleared": ["rate_limit_cache", "ip_ban_cache", "geo_cache"]
-                },
+                "details": {"cleared": ["ip_bans", "rate_limit_windows"]},
             }
         )
 
