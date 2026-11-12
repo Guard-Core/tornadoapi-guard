@@ -169,6 +169,76 @@ Your API is now protected by TornadoAPI Guard.
 
 ___
 
+Releasing an app
+----------------
+
+Tornado does not tell the application when its server stops, and this adapter uses no shutdown hook, so `SecurityMiddleware` never releases its app on its own: serving requests leaves the module-level default managers bound to the first app that took them. When a host stops a server, or a test suite builds several apps in one process, release each app's config explicitly. `release_app` is the same function guard-core exports, re-exported by the adapter.
+
+The host calls it once, after `server.stop()` and after the in-flight requests have drained, and before the IOLoop stops. This is a complete shutdown sequence:
+
+```python
+import asyncio
+import signal
+
+import tornado.web
+from tornadoapi_guard import (
+    SecurityConfig,
+    SecurityHandler,
+    SecurityMiddleware,
+    release_app,
+)
+
+config = SecurityConfig(rate_limit=100)
+middleware = SecurityMiddleware(config=config)
+
+
+class RootHandler(SecurityHandler):
+    async def get(self) -> None:
+        self.write({"message": "Hello World"})
+
+
+async def main() -> None:
+    await middleware.initialize()
+    app = tornado.web.Application(
+        [(r"/", RootHandler)],
+        security_middleware=middleware,
+    )
+    server = app.listen(8000)
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.SIGTERM, stop.set)
+    loop.add_signal_handler(signal.SIGINT, stop.set)
+    await stop.wait()
+    server.stop()
+    await server.close_all_connections()
+    release_app(config)
+    # asyncio.run stops the IOLoop when main returns, after the release
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+The default managers then go to the next app at that moment. An app that is never released keeps the garbage-collector-timed handoff of guard-core 5.0.0: the next app gets the defaults only once the collector has freed the earlier one, so which managers a later app gets can differ between runs. Calling it twice is harmless.
+
+In a test suite, release the config in a fixture after each test:
+
+```python
+import pytest
+from tornadoapi_guard import SecurityConfig, release_app
+
+
+@pytest.fixture
+def guard_config():
+    config = SecurityConfig(rate_limit=100)
+    yield config
+    release_app(config)
+```
+
+Never call `release_app` from `RequestHandler.on_finish` or `on_connection_close`, or from any other per-request hook. Those run once per request, so each request would release the live app: its handlers are forgotten and the default managers go to the next app while this one is still serving. Release only when the whole server has stopped, or at the end of a test.
+
+___
+
 What's Next
 -----------
 

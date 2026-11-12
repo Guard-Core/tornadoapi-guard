@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import AsyncGenerator, Generator, Iterator
-from typing import Any, NoReturn
+import weakref
+from collections.abc import AsyncGenerator, Callable, Generator, Iterator
+from typing import Any, Concatenate, NoReturn, ParamSpec
 
 import pytest
+from guard_core import release_app
+from guard_core.core.initialization.handler_initializer import HandlerInitializer
 from guard_core.handlers import cloud_handler as cloud_handler_module
 from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.cloud_ip_stores import InMemoryCloudIpStore
 from guard_core.handlers.ipban_handler import reset_global_state
 from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.ratelimit_handler import (
@@ -82,6 +86,42 @@ def _maybe_geo_ip() -> IPInfoManager | None:
     return IPInfoManager(IPINFO_TOKEN, None)
 
 
+_P = ParamSpec("_P")
+
+
+def _recording_the_config_it_binds(
+    original: Callable[Concatenate[HandlerInitializer, _P], None],
+    bound: list[weakref.ref[SecurityConfig]],
+) -> Callable[Concatenate[HandlerInitializer, _P], None]:
+    def initializer(
+        self: HandlerInitializer, *args: _P.args, **kwargs: _P.kwargs
+    ) -> None:
+        original(self, *args, **kwargs)
+        bound.append(weakref.ref(self.config))
+
+    return initializer
+
+
+@pytest.fixture(autouse=True)
+def _release_every_app_between_tests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Iterator[None]:
+    """HandlerInitializer binds an app's config to the engine's managers; an app
+    that nothing releases keeps that binding until the collector frees it, so
+    which managers the next test gets would depend on collector timing (D-317)."""
+    bound: list[weakref.ref[SecurityConfig]] = []
+    monkeypatch.setattr(
+        HandlerInitializer,
+        "__init__",
+        _recording_the_config_it_binds(HandlerInitializer.__init__, bound),
+    )
+    yield
+    for reference in bound:
+        config = reference()
+        if config is not None:
+            release_app(config)
+
+
 @pytest.fixture(autouse=True)
 async def reset_state() -> AsyncGenerator[None, None]:
     await reset_global_state()
@@ -92,6 +132,7 @@ async def reset_state() -> AsyncGenerator[None, None]:
     if cloud_instance:
         cloud_instance.ip_ranges = {"AWS": set(), "GCP": set(), "Azure": set()}
         cloud_instance.redis_handler = None
+        cloud_instance._store = InMemoryCloudIpStore()
 
     if IPInfoManager._instance:
         if IPInfoManager._instance.reader:
