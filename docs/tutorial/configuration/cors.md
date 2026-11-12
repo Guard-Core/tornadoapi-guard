@@ -95,6 +95,8 @@ config = SecurityConfig(
 )
 ```
 
+Pairing `cors_allow_credentials=True` with `"*"` in `cors_allow_origins` is refused. With `fail_on_misconfiguration=True` (the 5.0.0 default) `SecurityConfig` raises at construction: `CORS misconfiguration: wildcard origin '*' is incompatible with cors_allow_credentials=True Set fail_on_misconfiguration=False to start with it anyway.` With `fail_on_misconfiguration=False` it logs one WARNING, `CORS misconfiguration: wildcard origin '*' is incompatible with cors_allow_credentials=True fail_on_misconfiguration=False keeps starting with it.`, and drops credentials.
+
 ___
 
 Custom Headers
@@ -148,6 +150,6 @@ Troubleshooting
 Common issues:
 
 1. **Missing CORS headers**: Ensure `enable_cors=True` is set and the request actually carries an `Origin` header. Requests without an `Origin` header do not receive CORS headers.
-2. **Credentials + wildcard origin**: Browsers reject `Access-Control-Allow-Origin: *` when credentials are enabled. Use an explicit origin list when `cors_allow_credentials=True`.
+2. **Credentials + wildcard origin**: `cors_allow_credentials=True` with `"*"` in `cors_allow_origins` is refused (see Credentials Support above): `SecurityConfig` raises at construction with `fail_on_misconfiguration=True`, and with it `False` logs one WARNING and drops credentials. Use an explicit origin list.
 3. **Preflight failing**: Verify that the methods and headers your client sends are included in `cors_allow_methods` and `cors_allow_headers`.
 4. **Security headers disabled**: CORS headers are emitted by the security headers manager. If `security_headers={"enabled": False}` is set on the config, CORS headers will not be written either.
