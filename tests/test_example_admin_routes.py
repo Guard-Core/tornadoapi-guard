@@ -4,6 +4,7 @@ import time
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 import tornado.httpserver
@@ -104,3 +105,94 @@ async def test_unban_route_refuses_input_that_is_not_an_ip(
         raise_error=False,
     )
     assert response.code == 400
+
+
+OUTSIDER = {"X-Forwarded-For": "10.0.0.6, 10.0.0.9"}
+
+
+async def _fetch(
+    base_url: str, path: str, method: str = "GET", body: object = None, **kw: str
+) -> int:
+    response = await AsyncHTTPClient().fetch(
+        base_url + path,
+        method=method,
+        body=None if body is None else json.dumps(body),
+        headers=kw or None,
+        raise_error=False,
+    )
+    return int(response.code)
+
+
+async def test_emergency_switch_refuses_outsiders_and_keeps_the_admin(
+    example: tuple[str, ModuleType],
+) -> None:
+    base_url, module = example
+    config = module.security_config
+    assert await _fetch(base_url, "/", **OUTSIDER) == 200
+
+    assert (
+        await _fetch(base_url, "/admin/emergency-mode", "PUT", {"enable": True}) == 200
+    )
+    assert config.emergency_mode is True
+    assert await _fetch(base_url, "/", **OUTSIDER) == 503
+    assert await _fetch(base_url, "/") == 200
+
+    assert (
+        await _fetch(base_url, "/admin/emergency-mode", "PUT", {"enable": False}) == 200
+    )
+    assert await _fetch(base_url, "/", **OUTSIDER) == 200
+    assert await _fetch(base_url, "/") == 200
+
+
+@pytest.mark.parametrize("body", [{"enable": "yes"}, {"enable": 1}, {}, [True]])
+async def test_emergency_switch_refuses_a_body_that_is_not_a_boolean(
+    example: tuple[str, ModuleType], body: object
+) -> None:
+    base_url, module = example
+    assert await _fetch(base_url, "/admin/emergency-mode", "PUT", body) == 400
+    assert module.security_config.emergency_mode is False
+
+
+async def test_emergency_switch_defers_to_the_dashboard_when_dynamic_rules_are_on(
+    example: tuple[str, ModuleType],
+) -> None:
+    base_url, module = example
+    config = module.security_config
+    config.agent_api_key = "test-key"
+    config.enable_agent = True
+    config.enable_dynamic_rules = True
+    response = await AsyncHTTPClient().fetch(
+        base_url + "/admin/emergency-mode",
+        method="PUT",
+        body=json.dumps({"enable": True}),
+        raise_error=False,
+    )
+    assert response.code == 409
+    assert b"dashboard" in response.body
+    assert config.emergency_mode is False
+
+
+async def test_stats_come_from_the_engine_and_carry_no_invented_numbers(
+    example: tuple[str, ModuleType],
+) -> None:
+    base_url, module = example
+    bans = ip_ban_manager_for(module.security_config)
+
+    async def stats() -> dict[str, Any]:
+        response = await AsyncHTTPClient().fetch(base_url + "/admin/stats")
+        payload: dict[str, Any] = json.loads(response.body)
+        return payload
+
+    before = await stats()
+    await bans.ban_ip(BANNED_IP, 300, "test")
+    after = await stats()
+    await bans.unban_ip(BANNED_IP)
+    lifted = await stats()
+
+    assert BANNED_IP not in before["banned_ips"]
+    assert BANNED_IP in after["banned_ips"]
+    assert BANNED_IP not in lifted["banned_ips"]
+    assert not {"total_requests", "blocked_requests", "suspicious_activities"} & set(
+        after
+    )
+    assert after["active_rules"]["rate_limit"] == module.security_config.rate_limit
