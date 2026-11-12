@@ -65,7 +65,43 @@ Rate Limiting Settings
 |-------|------|---------|-------------|
 | `rate_limit` | int | 120 | Maximum requests allowed per window |
 | `rate_limit_window` | int | 60 | Window length in seconds |
-| `endpoint_rate_limits` | dict[str, tuple[int, int]] | `{}` | Per-endpoint `{path: (requests, window)}` limits; a dynamic rule's limits merge per endpoint (see Dynamic rules below) |
+| `endpoint_rate_limits` | dict[str, tuple[int, int]] | `{}` | Per-endpoint `{path: (requests, window)}` limits; a dynamic rule's limits merge per endpoint (see Dynamic rules below); a limit follows the handler, not the path (see Endpoint Rate Limits below) |
+
+Endpoint Rate Limits
+--------------------
+
+A limit follows the handler, not the path. The middleware resolves every `endpoint_rate_limits` key through its own router, and a request matches a key when it reaches the same handler class with the same path parameters, so a concrete-id key stays per resource. Two paths on one handler class share one budget per HTTP method: `/login` and `/signin` below are routed to one `SignInHandler`, so a limit set under either key counts both, and a stacked path cannot get a fresh budget. `/signup` has its own handler class, so its limit is its own. A generic handler class stacked on many paths shares one budget across all of them, so give each limited path its own handler class. A key that resolves to no route falls back to the normalized path. See the 5.0.0 release note "An endpoint limit follows the handler, not the path".
+
+```python
+from tornado.web import Application, RequestHandler
+from tornadoapi_guard import SecurityConfig
+
+
+class SignInHandler(RequestHandler):
+    def get(self):
+        self.write({"page": "sign in"})
+
+
+class SignUpHandler(RequestHandler):
+    def get(self):
+        self.write({"page": "sign up"})
+
+
+app = Application(
+    [
+        (r"/login", SignInHandler),
+        (r"/signin", SignInHandler),
+        (r"/signup", SignUpHandler),
+    ]
+)
+
+config = SecurityConfig(
+    endpoint_rate_limits={
+        "/login": (5, 60),
+        "/signup": (3, 60),
+    },
+)
+```
 
 ___
 
