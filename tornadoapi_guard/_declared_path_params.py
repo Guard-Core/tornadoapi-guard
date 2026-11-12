@@ -1,10 +1,7 @@
 from collections.abc import Iterable, Iterator
 
 from guard_core._misconfiguration import config_logger
-from guard_core._utils.route_gate import (
-    path_params_missing_from_template,
-    path_params_without_a_literal_segment_before,
-)
+from guard_core._utils.route_gate import declared_path_param_problems as engine_problems
 from guard_core.decorators.base import BaseSecurityDecorator
 from tornado.routing import Rule
 from tornado.web import Application, RequestHandler
@@ -54,21 +51,10 @@ def declared_path_param_problems(
             declared = getattr(route_config, "excluded_detection_path_params", None)
             if not declared:
                 continue
-            # keep in step with SuspiciousActivityCheck's declared-path-param report
-            for name in path_params_without_a_literal_segment_before(
-                template, declared
-            ):
+            for name, problem in engine_problems(template, declared).items():
                 problems.append(
                     f"@detection_exclusion(path_params=...) on route {route_id!r} "
-                    f"declares {name!r}, which has no literal segment before it in "
-                    f"the route template {template!r}: it would exempt the whole "
-                    "path from the probe rows, so the whole path is scanned."
-                )
-            for name in path_params_missing_from_template(template, declared):
-                problems.append(
-                    f"@detection_exclusion(path_params=...) on route {route_id!r} "
-                    f"declares {name!r}, which is not in the route template "
-                    f"{template!r}, so it exempts nothing."
+                    f"declares {name!r}, which {problem}"
                 )
     return problems
 
