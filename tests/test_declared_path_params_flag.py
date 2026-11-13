@@ -10,8 +10,9 @@ import pytest
 import tornado.httpserver
 import tornado.netutil
 import tornado.web
-from guard_core._misconfiguration_kinds import MisconfigurationError, Problem
+from guard_core._misconfiguration_kinds import Problem
 from guard_core.decorators.base import BaseSecurityDecorator
+from guard_core.exceptions import MisconfigurationError
 from guard_core.models import SecurityConfig
 from tornado.routing import Rule
 
