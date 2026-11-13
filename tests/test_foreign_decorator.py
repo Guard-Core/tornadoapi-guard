@@ -208,3 +208,33 @@ async def test_a_nested_application_served_by_the_same_middleware_is_still_walke
 
     assert await _get(port, "/hello") == 200
     assert len(_foreign(caplog)) == 1
+
+
+async def test_a_nested_application_whose_guard_has_no_decorator_is_reported(
+    serve: Any, caplog: pytest.LogCaptureFixture
+) -> None:
+    _, root = _root(False)
+    inner_middleware = SecurityMiddleware(config=_config(False))
+    nested = tornado.web.Application(
+        [("/sub/admin", _guarded(root, "Admin"))], security_middleware=inner_middleware
+    )
+    caplog.set_level(logging.WARNING)
+    port = await serve(False, [("/hello", Plain), (r"/sub/.*", nested)], root)
+
+    assert await _get(port, "/hello") == 200
+    assert len(_foreign(caplog)) == 1
+    await inner_middleware.reset()
+
+
+async def test_a_nested_application_whose_guard_has_no_decorator_is_refused_by_default(
+    serve: Any,
+) -> None:
+    _, root = _root(True)
+    inner_middleware = SecurityMiddleware(config=_config(True))
+    nested = tornado.web.Application(
+        [("/sub/admin", _guarded(root, "Admin"))], security_middleware=inner_middleware
+    )
+    port = await serve(True, [("/hello", Plain), (r"/sub/.*", nested)], root)
+
+    assert await _get(port, "/hello") == 500
+    await inner_middleware.reset()
