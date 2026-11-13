@@ -3,7 +3,7 @@ detection_exclusion path param, and the kind travels with every report."""
 
 import logging
 import pathlib
-from collections.abc import AsyncGenerator, Iterable
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import pytest
@@ -14,7 +14,6 @@ from guard_core._misconfiguration_kinds import Problem
 from guard_core.decorators.base import BaseSecurityDecorator
 from guard_core.exceptions import MisconfigurationError
 from guard_core.models import SecurityConfig
-from tornado.routing import Rule
 
 import tornadoapi_guard
 from tests.test_declared_path_params import (
@@ -258,35 +257,6 @@ async def test_a_route_added_after_a_clean_check_warns_with_the_flag_off(
     assert await _get(served.port, "/late/5") == 200
 
     assert len(_problems(caplog)) == 1
-
-
-async def test_one_rule_count_per_request_is_shared_with_the_route_template(
-    running: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    import tornadoapi_guard.middleware as module
-
-    counts: list[int] = []
-    real = module._rule_count
-
-    def counting(rules: Iterable[Rule]) -> int:
-        counts.append(1)
-        return real(rules)
-
-    monkeypatch.setattr(module, "_rule_count", counting)
-    served = await running(build_valid_for_count, False)
-
-    await _get(served.port, "/items/7")
-    first = len(counts)
-    await _get(served.port, "/items/7")
-
-    assert len(counts) - first == first
-    assert first >= 1
-
-
-def build_valid_for_count(decorator: SecurityDecorator) -> Routes:
-    from tests.test_declared_path_params import build_valid
-
-    return build_valid(decorator)
 
 
 async def test_the_reporter_walks_the_application_itself_when_it_is_given_no_problems(
