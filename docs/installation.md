@@ -37,6 +37,7 @@ Optional extras. The base install carries `tornadoapi-guard`'s own dependencies 
 | `tornadoapi-guard[redis]` | the Redis client | `enable_redis=True`: Redis-backed rate limits, bans, caches and shared state |
 | `tornadoapi-guard[geo]` | `maxminddb` and the downloader of the built-in GeoIP manager | country rules (`blocked_countries`, `whitelist_countries`, `@block_countries`, `@allow_countries`, `@geo_rate_limit`) and `ipinfo_token` |
 | `tornadoapi-guard[cloud]` | `aiohttp` and `requests` | `block_cloud_providers` |
+| `tornadoapi-guard[agent]` | `guard-agent` | `enable_agent=True` (telemetry) |
 
 Combine them as needed, for example `pip install "tornadoapi-guard[redis,geo]"`.
 

@@ -123,7 +123,7 @@ async def test_agent_stats_returns_disabled_when_agent_handler_unset() -> None:
     config = SecurityConfig(enable_agent=False)
     middleware = SecurityMiddleware(config=config)
     assert middleware.agent_handler is None
-    assert middleware.agent_stats == {"enabled": False}
+    assert middleware.agent_stats == {"enabled": False, "degraded": False}
 
 
 async def test_agent_stats_returns_enabled_with_agent_handler_stats() -> None:
