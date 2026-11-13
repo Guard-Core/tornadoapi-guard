@@ -1,8 +1,10 @@
 from collections.abc import Iterable, Iterator
 
-from guard_core._misconfiguration import config_logger
-from guard_core._utils.route_gate import declared_path_param_problems as engine_problems
+from guard_core._misconfiguration import config_logger, report_misconfigurations
+from guard_core._misconfiguration_kinds import Problem
+from guard_core._utils.route_gate import detection_exclusion_path_param_problems
 from guard_core.decorators.base import BaseSecurityDecorator
+from guard_core.models import SecurityConfig
 from tornado.routing import Rule
 from tornado.web import Application, RequestHandler
 
@@ -40,27 +42,34 @@ def _route_ids_of(handler_class: type[RequestHandler]) -> set[str]:
 
 def declared_path_param_problems(
     application: Application, guard_decorator: BaseSecurityDecorator | None
-) -> list[str]:
+) -> list[Problem]:
     router = getattr(application, "default_router", None)
     if guard_decorator is None or router is None:
         return []
-    problems: list[str] = []
+    problems: list[Problem] = []
     for template, handler_class in _templates_and_handlers(router.rules):
         for route_id in sorted(_route_ids_of(handler_class)):
             route_config = guard_decorator.get_route_config(route_id)
             declared = getattr(route_config, "excluded_detection_path_params", None)
             if not declared:
                 continue
-            for name, problem in engine_problems(template, declared).items():
-                problems.append(
-                    f"@detection_exclusion(path_params=...) on route {route_id!r} "
-                    f"declares {name!r}, which {problem}"
-                )
+            problems += detection_exclusion_path_param_problems(
+                route_id, template, declared
+            )
     return problems
 
 
-def warn_at_first_request(
-    application: Application, guard_decorator: BaseSecurityDecorator | None
+def report_declared_path_params(
+    config: SecurityConfig,
+    application: Application,
+    guard_decorator: BaseSecurityDecorator | None,
 ) -> None:
-    for problem in declared_path_param_problems(application, guard_decorator):
-        config_logger.warning(problem)
+    """The one report point, at the first request, the earliest point the adapter
+    has the Application (add_handlers can still add routes later):
+    fail_on_misconfiguration decides between a raise and one warning."""
+    report_misconfigurations(
+        config,
+        declared_path_param_problems(application, guard_decorator),
+        logger=config_logger,
+        stacklevel=2,
+    )

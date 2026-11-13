@@ -1,6 +1,7 @@
 """LEDGER 6.851: a declared detection_exclusion path param the route does not have is
 logged once as a WARNING at the first request, read from the Application's rules (a
-positional group has no name, so any declared name there warns). It never raises."""
+positional group has no name, so any declared name there warns); with the flag on
+the request is refused instead."""
 
 import logging
 from collections.abc import AsyncGenerator, Callable
@@ -151,7 +152,6 @@ def _problems(caplog: pytest.LogCaptureFixture) -> list[str]:
     ]
 
 
-@pytest.mark.parametrize("flag", [True, False])
 @pytest.mark.parametrize(
     ("build", "path", "tail"),
     [
@@ -160,16 +160,15 @@ def _problems(caplog: pytest.LogCaptureFixture) -> list[str]:
         (build_rootless, "/anything", _rootless("/(?P<tail>.*)$")),
     ],
 )
-async def test_the_first_request_warns_once_and_never_raises(
+async def test_the_first_request_warns_once_with_the_flag_off(
     serve: Any,
-    flag: bool,
     build: Build,
     path: str,
     tail: str,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     caplog.set_level(logging.WARNING, logger=LOGGER)
-    port = await serve(build, flag)
+    port = await serve(build, False)
 
     assert await _get(port, path) == 200
     assert await _get(port, path) == 200
@@ -182,7 +181,7 @@ async def test_a_nested_application_is_walked(
     serve: Any, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level(logging.WARNING, logger=LOGGER)
-    port = await serve(build_missing, True, nested=True)
+    port = await serve(build_missing, False, nested=True)
 
     assert await _get(port, "/ok") == 200
 
@@ -194,7 +193,7 @@ async def test_one_handler_on_two_routes_is_checked_per_route(
     serve: Any, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level(logging.WARNING, logger=LOGGER)
-    port = await serve(build_one_handler_on_two_routes, True)
+    port = await serve(build_one_handler_on_two_routes, False)
 
     assert await _get(port, "/a/1") == 200
 

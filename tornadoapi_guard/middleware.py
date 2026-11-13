@@ -45,7 +45,7 @@ from tornado.web import (
     StaticFileHandler,
 )
 
-from tornadoapi_guard._declared_path_params import warn_at_first_request
+from tornadoapi_guard._declared_path_params import report_declared_path_params
 from tornadoapi_guard._route_gate_host import (
     hold_route_gate_host,
     release_route_gate_host,
@@ -595,12 +595,13 @@ class SecurityMiddleware:
     ) -> GuardResponse | None:
         guard_request = TornadoGuardRequest(handler)
         if id(handler.application) not in self._path_params_checked:
-            self._path_params_checked.add(id(handler.application))
-            warn_at_first_request(
+            report_declared_path_params(
+                self.config,
                 handler.application,
                 self.guard_decorator
                 or handler.application.settings.get("guard_decorator"),
             )
+            self._path_params_checked.add(id(handler.application))
         try:
             await self._ensure_initialized()
         except GuardRedisError as e:
