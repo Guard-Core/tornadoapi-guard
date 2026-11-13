@@ -138,7 +138,6 @@ async def test_a_collected_application_leaves_nothing_behind() -> None:
     alive = weakref.ref(app)
 
     del app, handler
-    middleware._routing_application = None
     gc.collect()
 
     assert alive() is None

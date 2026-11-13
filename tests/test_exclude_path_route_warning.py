@@ -135,7 +135,7 @@ async def test_a_rule_without_a_path_regex_counts_as_a_match_for_everything(
     app = tornado.web.Application(
         [Rule(AnyMatches(), Page)], security_middleware=middleware
     )
-    middleware._routing_application = app
+    middleware._note_application(app)
 
     with caplog.at_level(logging.WARNING, logger="guard_core"):
         assert middleware.static_route_prefixes() == ("/",)

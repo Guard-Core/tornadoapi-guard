@@ -184,7 +184,7 @@ async def test_resolve_route_ignores_delegates_without_a_handler_class(
 ) -> None:
     port, middleware = await serve({"/login": (5, 60)})
     await _statuses(port, ["/login"])
-    application = middleware._routing_application
+    application = middleware._live_application()
     with patch.object(application, "find_handler", lambda request: object()):
         assert middleware.resolve_route("/login") == ()
 

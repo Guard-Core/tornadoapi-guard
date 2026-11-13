@@ -273,7 +273,7 @@ class SecurityMiddleware:
                 )
 
         self.security_pipeline: SecurityCheckPipeline | None = None
-        self._routing_application: Application | None = None
+        self._routing_application: weakref.ref[Application] | None = None
         self._route_template_cache: OrderedDict[
             tuple[str | int, str | int], str | None
         ] = OrderedDict()
@@ -436,7 +436,7 @@ class SecurityMiddleware:
         if app_decorator:
             guard_request.state.guard_decorator = app_decorator
 
-        self._routing_application = handler.application
+        self._note_application(handler.application)
         method_name = (handler.request.method or "get").lower()
         endpoint = getattr(handler, method_name, None)
         if endpoint is None:
@@ -457,10 +457,21 @@ class SecurityMiddleware:
                 _path_params(handler.path_args, handler.path_kwargs),
             )
 
+    def _note_application(self, application: Application) -> None:
+        # Weak, so the middleware never keeps an Application alive; the ref is
+        # rebuilt only when the application changes or the old one died.
+        current = self._routing_application
+        if current is None or current() is not application:
+            self._routing_application = weakref.ref(application)
+
+    def _live_application(self) -> Application | None:
+        reference = self._routing_application
+        return None if reference is None else reference()
+
     def resolve_route(
         self, path: str
     ) -> tuple[tuple[tuple[type, str], tuple[tuple[str, str], ...]], ...]:
-        application = self._routing_application
+        application = self._live_application()
         if application is None:
             return ()
         request = HTTPServerRequest(
@@ -486,7 +497,7 @@ class SecurityMiddleware:
         )
 
     def route_template(self, path: str) -> str | None:
-        application = self._routing_application
+        application = self._live_application()
         if application is None:
             return None
         rules = application.default_router.rules
@@ -520,7 +531,7 @@ class SecurityMiddleware:
         return template
 
     async def static_file_exists(self, path: str) -> bool:
-        application = self._routing_application
+        application = self._live_application()
         if application is None:
             return False
         request = HTTPServerRequest(
@@ -552,7 +563,7 @@ class SecurityMiddleware:
         return validated is not None
 
     def static_route_prefixes(self) -> tuple[str, ...]:
-        application = self._routing_application
+        application = self._live_application()
         if application is None:
             return ("/",)
         return tuple(_rule_prefixes(application.default_router.rules))
