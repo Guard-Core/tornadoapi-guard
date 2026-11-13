@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import weakref
 from contextvars import Token
 
 from guard_core.adapter_support import AppScope, hold_app_scope, release_app_scope
+from guard_core.exceptions import MisconfigurationError
 from tornado.web import OutputTransform, RequestHandler
 from tornado.websocket import WebSocketHandler
 
@@ -11,6 +14,8 @@ from tornadoapi_guard.adapters import apply_guard_response, get_guard_state
 from tornadoapi_guard.middleware import SecurityMiddleware
 
 _background_tasks: set[asyncio.Future[None]] = set()
+_unwired_logger = logging.getLogger("guard_core.models")
+_unwired_reported: weakref.WeakSet[object] = weakref.WeakSet()
 
 
 def _security_middleware_of(handler: RequestHandler) -> SecurityMiddleware | None:
@@ -20,9 +25,40 @@ def _security_middleware_of(handler: RequestHandler) -> SecurityMiddleware | Non
     return None
 
 
+def _report_unwired_guard(handler: RequestHandler) -> None:
+    # No middleware means no config to read the flag from, unless one sits under
+    # another settings key (the usual typo): then its flag decides and the key is named.
+    settings = handler.application.settings
+    misnamed = next(
+        (
+            (key, value)
+            for key, value in settings.items()
+            if isinstance(value, SecurityMiddleware)
+        ),
+        None,
+    )
+    message = (
+        "The application settings have no SecurityMiddleware under "
+        '"security_middleware", so this guarded handler would serve unguarded.'
+    )
+    if misnamed is not None:
+        message += f' One sits under "{misnamed[0]}": rename that setting.'
+    fail = True if misnamed is None else misnamed[1].config.fail_on_misconfiguration
+    if fail:
+        raise MisconfigurationError(
+            f"{message} Set fail_on_misconfiguration=False to serve anyway.", []
+        )
+    if handler.application not in _unwired_reported:
+        _unwired_reported.add(handler.application)
+        _unwired_logger.warning(
+            f"{message} fail_on_misconfiguration=False keeps serving it."
+        )
+
+
 async def _guard_handshake_or_request(handler: RequestHandler) -> None:
     middleware = _security_middleware_of(handler)
     if middleware is None:
+        _report_unwired_guard(handler)
         return
 
     early = await middleware.run_pre_processing(handler)
@@ -34,9 +70,12 @@ class SecurityHandler(RequestHandler):
     _guard_scope_token: Token[AppScope | None] | None = None
 
     async def prepare(self) -> None:
-        await _guard_handshake_or_request(self)
         middleware = _security_middleware_of(self)
         if middleware is not None:
+            self._guard_scope_token = hold_app_scope(middleware.config)
+        await _guard_handshake_or_request(self)
+        if middleware is not None and self._guard_scope_token is None:
+            # The app's first request builds its scope inside the pipeline.
             self._guard_scope_token = hold_app_scope(middleware.config)
 
     async def _execute(
@@ -124,4 +163,9 @@ class SecurityWebSocketHandler(WebSocketHandler):
     """
 
     async def prepare(self) -> None:
-        await _guard_handshake_or_request(self)
+        middleware = _security_middleware_of(self)
+        token = None if middleware is None else hold_app_scope(middleware.config)
+        try:
+            await _guard_handshake_or_request(self)
+        finally:
+            release_app_scope(token)

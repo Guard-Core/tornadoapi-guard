@@ -39,6 +39,7 @@ Lifecycle Hook: `prepare`
 async def prepare(self) -> None:
     middleware = self._get_security_middleware()
     if middleware is None:
+        # refuses the request or warns once, see "Missing Middleware"
         return
 
     early = await middleware.run_pre_processing(self)
@@ -49,7 +50,7 @@ async def prepare(self) -> None:
 `prepare()` runs **before** the HTTP method (`get`, `post`, etc.) is dispatched. `SecurityHandler` overrides it to:
 
 1. Look up the middleware via `self.application.settings["security_middleware"]`.
-2. Call `middleware.run_pre_processing(self)`, which mirrors fastapi-guard's `dispatch`: the CORS preflight, the engine passthrough handling (excluded paths stay scoped so the checks that apply to them still run, and a request with no client address gets the `fail_secure` 403, or is logged and admitted under `passive_mode`), the route all-checks bypass (the real handler method is called and the response modifier applied), and the 17-check security pipeline (route config, emergency mode, HTTPS enforcement, request logging, request size/content, required headers, authentication, referrer, custom validators, time window, cloud IP refresh, IP security, cloud provider, user agent, rate limit, suspicious activity, and custom request check).
+2. Call `middleware.run_pre_processing(self)`, which mirrors fastapi-guard's `dispatch`: the CORS preflight, the engine passthrough handling (excluded paths stay scoped so the checks that apply to them still run, and a request with no client address gets the `fail_secure` 403, or is logged and admitted under `passive_mode`), the route all-checks bypass (the real handler method is called and the response modifier applied), and the security pipeline of up to 18 checks (route config, emergency mode, HTTPS enforcement, request logging, request size/content, cloud IP refresh, IP security, cloud provider, user agent, CORS preflight, rate limit, required headers, authentication, referrer, custom validators, time window, suspicious activity, and custom request check).
 3. If any of those produces a response (blocked, preflight, bypass, or the Redis-unavailable 503), `apply_guard_response()` writes the status, headers, and body back through the handler (via `clear`, `set_status`, `set_header`, `write`, `finish`) with the CORS headers attached. The actual HTTP method is **not** invoked again, and this response does not go through the response pass below, so it emits no request metrics.
 
 Because `prepare()` is `async`, the pipeline can perform async work (Redis lookups, IPInfo API calls, agent event publishing) without blocking the Tornado IOLoop.
@@ -84,7 +85,7 @@ def _get_security_middleware(self) -> SecurityMiddleware | None:
     return None
 ```
 
-Internal lookup. Returns the `SecurityMiddleware` instance stored in `application.settings["security_middleware"]`, or `None` if no middleware is configured. When `None` is returned, both `prepare()` and `finish()` short-circuit - see [Degraded mode](#degraded-mode) below.
+Internal lookup. Returns the `SecurityMiddleware` instance stored in `application.settings["security_middleware"]`, or `None` if no middleware is configured. When `None` is returned, `prepare()` refuses the request or warns, see [Missing Middleware](#missing-middleware) below.
 
 ___
 
@@ -168,15 +169,17 @@ You are free to override `set_default_headers` on your own handlers to add stati
 
 ___
 
-Degraded Mode
--------------
+Missing Middleware
+------------------
 
-If a handler inherits from `SecurityHandler` but the `Application` does **not** have a `security_middleware` entry in its settings (for example, in a unit test, a minimal sandbox, or during local development without the full middleware stack), `_get_security_middleware()` returns `None` and both hooks short-circuit:
+If a handler inherits from `SecurityHandler` (or `SecurityWebSocketHandler`) but the `Application` has no `SecurityMiddleware` under `settings["security_middleware"]` (the key is missing or misspelled), `prepare()` reports it instead of serving the request unguarded:
 
-- `prepare()` returns immediately - no headers are injected, no pipeline runs.
-- `finish()` finishes the response immediately - no response pass runs.
+- With `fail_on_misconfiguration=True` (the default since 5.0.0) the request is refused with a `500` and a `MisconfigurationError` is logged.
+- With `fail_on_misconfiguration=False` the request is served unguarded and a warning is logged once per application.
 
-In this degraded state `SecurityHandler` behaves exactly like a plain `tornado.web.RequestHandler`. This is intentional: it lets you write test fixtures that instantiate handlers without having to stand up a full `SecurityMiddleware` and its Redis/agent dependencies. Just remember that **no security checks are being performed** when the middleware is absent.
+The flag is read from a `SecurityMiddleware` stored under another settings key (the usual typo), and the message names that key. With no middleware anywhere in the settings there is no configuration to read the flag from, so the request is refused.
+
+To use a handler in a test fixture without a middleware, subclass `tornado.web.RequestHandler` instead.
 
 ___
 

@@ -155,18 +155,6 @@ async def test_rate_limit_applies_to_the_upgrade_requests() -> None:
     assert refused.value.code == 429
 
 
-async def test_without_a_middleware_the_upgrade_proceeds() -> None:
-    server, port, _ = await _serve(None, GuardedEcho)
-    try:
-        connection = await tornado.websocket.websocket_connect(
-            HTTPRequest(f"ws://127.0.0.1:{port}/ws")
-        )
-        assert await connection.read_message() == "connected"
-        connection.close()
-    finally:
-        server.stop()
-
-
 async def test_a_plain_websocket_handler_stays_unguarded() -> None:
     config = _config(blacklist=["127.0.0.1"])
 
