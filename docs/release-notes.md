@@ -13,6 +13,8 @@ ___
 Unreleased
 ----------
 
+- **Fixed** - **A decorator set as the `guard_decorator` application setting is adopted through guard-core like one given to `set_decorator_handler` (release note, behavior change).** The settings path only put the decorator on the request state, so the engine never adopted it: its ban rules did not reach the application's ban manager, its geo source was not built and the behavior and response contexts did not hold it. The first request now adopts it through `set_decorator_handler`; a decorator already set on the middleware still wins.
+
 - **Fixed (docs)** - **`docs/release-notes.md` and `CHANGELOG.md` carry the same version sections, and a test keeps it true.** `v1.2.0` was marked unreleased though its tag exists (2026-09-30), and `v1.2.0` and `v0.0.1` were missing from the release notes. `tests/test_release_notes_parity.py` compares every section of both files.
 
 - **Changed** - **The adapter imports guard-core internals only from `guard_core.adapter_support`.** It used to import the private `_misconfiguration`, `_misconfiguration_kinds`, `_utils` and `_config_capabilities` modules directly, so an engine refactor could break an installed adapter. The names are the same objects and nothing behaves differently; the module is part of guard-core's stable 5.x surface and a guard-core test pins its names.

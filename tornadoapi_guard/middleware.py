@@ -693,6 +693,12 @@ class SecurityMiddleware:
             release_route_signature(signature_token)
             release_route_gate_host(host_token)
 
+    def _adopt_settings_decorator(self, application: Application) -> None:
+        # The settings path adopts like the setter; a decorator already set wins.
+        declared_decorator = application.settings.get("guard_decorator")
+        if self.guard_decorator is None and declared_decorator is not None:
+            self.set_decorator_handler(declared_decorator)
+
     def _check_declared_path_params(self, application: Application) -> None:
         signature = route_signature()
         state = self._path_params_state.get(application)
@@ -718,6 +724,7 @@ class SecurityMiddleware:
         self, handler: RequestHandler
     ) -> GuardResponse | None:
         guard_request = TornadoGuardRequest(handler)
+        self._adopt_settings_decorator(handler.application)
         self._check_declared_path_params(handler.application)
         try:
             await self._ensure_initialized()
