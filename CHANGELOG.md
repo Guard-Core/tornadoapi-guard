@@ -6,6 +6,8 @@ ___
 Unreleased
 ----------
 
+- **Added** - **An "Upgrading to 5.0.0" page explains the route id error a test application raises with a `SecurityDecorator` of its own.** It quotes the `MisconfigurationError` message and the fix: build the test application the way production does, with the application's own decorator as the `guard_decorator` setting, and never switch `fail_on_misconfiguration` off for it.
+
 - **Added** - **`tornadoapi-guard[agent]` installs `guard-agent`, and the agent options behave as in fastapi-guard (release note, behavior change).** The extra (`guard-agent>=3.2.4`) is listed in the README and the installation page, and the agent pages say `pip install "tornadoapi-guard[agent]"`. An agent that fails to initialize now fires the `on_error` hook with the stage `agent_init`, raises under `agent_strict=True`, and otherwise logs the error and continues with `agent_degraded` set. `agent_stats` reports `degraded`, so it answers `{"enabled": False, "degraded": False}` where it answered `{"enabled": False}`. A missing `guard-agent` used to raise from the middleware's constructor even with `agent_strict=False`; it now degrades.
 
 - **Fixed** - **A decorator set as the `guard_decorator` application setting is adopted through guard-core like one given to `set_decorator_handler` (release note, behavior change).** The settings path only put the decorator on the request state, so the engine never adopted it: its ban rules did not reach the application's ban manager, its geo source was not built and the behavior and response contexts did not hold it. The first request now adopts it through `set_decorator_handler`; a decorator already set on the middleware still wins.
