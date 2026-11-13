@@ -5,7 +5,10 @@ from guard_core._misconfiguration import (
     report_declared_path_param_problems,
 )
 from guard_core._misconfiguration_kinds import Problem
-from guard_core._utils.route_gate import detection_exclusion_path_param_problems
+from guard_core._utils.route_gate import (
+    detection_exclusion_path_param_problems,
+    route_unknown_to_decorator_problem,
+)
 from guard_core.decorators.base import BaseSecurityDecorator
 from guard_core.models import SecurityConfig
 from tornado.routing import Rule
@@ -18,14 +21,30 @@ def _nested_rules(target: object) -> Iterable[Rule] | None:
     return getattr(target, "rules", None)
 
 
+def _owns_its_guard(target: object, walking: object) -> bool:
+    """A nested Application that carries a SecurityMiddleware of its own: its
+    handlers run that middleware (SecurityHandler reads it from
+    handler.application.settings, handler.py:17), so the walk of the outer
+    application leaves them to it. The outer's own middleware serving a nested
+    Application is not another one."""
+    from tornadoapi_guard.middleware import SecurityMiddleware
+
+    if not isinstance(target, Application):
+        return False
+    own = target.settings.get("security_middleware")
+    return isinstance(own, SecurityMiddleware) and own is not walking
+
+
 def _templates_and_handlers(
-    rules: Iterable[Rule],
+    rules: Iterable[Rule], walking: object
 ) -> Iterator[tuple[str, type[RequestHandler]]]:
     for rule in rules:
+        if _owns_its_guard(rule.target, walking):
+            continue
         nested = _nested_rules(rule.target)
         pattern = getattr(getattr(rule.matcher, "regex", None), "pattern", None)
         if nested is not None:
-            yield from _templates_and_handlers(nested)
+            yield from _templates_and_handlers(nested, walking)
         elif isinstance(pattern, str) and isinstance(rule.target, type):
             yield pattern, rule.target
 
@@ -50,9 +69,16 @@ def declared_path_param_problems(
     if guard_decorator is None or router is None:
         return []
     problems: list[Problem] = []
-    for template, handler_class in _templates_and_handlers(router.rules):
+    unknown: set[str] = set()
+    walking = application.settings.get("security_middleware")
+    for template, handler_class in _templates_and_handlers(router.rules, walking):
         for route_id in sorted(_route_ids_of(handler_class)):
             route_config = guard_decorator.get_route_config(route_id)
+            if route_config is None:
+                if route_id not in unknown:
+                    unknown.add(route_id)
+                    problems.append(route_unknown_to_decorator_problem(route_id))
+                continue
             declared = getattr(route_config, "excluded_detection_path_params", None)
             if not declared:
                 continue
