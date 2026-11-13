@@ -1,6 +1,9 @@
 from collections.abc import Iterable, Iterator
 
-from guard_core._misconfiguration import config_logger, report_misconfigurations
+from guard_core._misconfiguration import (
+    config_logger,
+    report_declared_path_param_problems,
+)
 from guard_core._misconfiguration_kinds import Problem
 from guard_core._utils.route_gate import detection_exclusion_path_param_problems
 from guard_core.decorators.base import BaseSecurityDecorator
@@ -65,7 +68,7 @@ def report_declared_path_params(
     guard_decorator: BaseSecurityDecorator | None,
     *,
     problems: list[Problem] | None = None,
-    reported: set[str] | None = None,
+    log_refusal: bool = False,
 ) -> None:
     """The one report point, at the first request and again whenever the rules
     change (add_handlers can add routes later). With fail_on_misconfiguration every
@@ -73,15 +76,10 @@ def report_declared_path_params(
     logged once; without it each problem is warned once."""
     if problems is None:
         problems = declared_path_param_problems(application, guard_decorator)
-    seen = set() if reported is None else reported
-    fresh = [problem for problem in problems if str(problem) not in seen]
-    seen.update(str(problem) for problem in fresh)
-    if config.fail_on_misconfiguration:
-        if fresh:
-            config_logger.error(
-                "Every request is refused until this is fixed: %s",
-                "; ".join(fresh),
-            )
-        report_misconfigurations(config, problems, logger=config_logger, stacklevel=2)
-        return
-    report_misconfigurations(config, fresh, logger=config_logger, stacklevel=2)
+    if log_refusal and problems and config.fail_on_misconfiguration:
+        config_logger.error(
+            "Every request is refused until this is fixed: %s", "; ".join(problems)
+        )
+    report_declared_path_param_problems(
+        config, problems, logger=config_logger, stacklevel=2
+    )

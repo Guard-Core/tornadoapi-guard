@@ -110,7 +110,6 @@ def _bounded_key_part(text: str) -> str | int:
 class _PathParamsCheck:
     signature: tuple[int, int] | None
     problems: list[Problem]
-    reported: set[str]
 
 
 def _nested_rules(target: object) -> Iterable[Rule] | None:
@@ -619,14 +618,14 @@ class SecurityMiddleware:
     def _check_declared_path_params(self, application: Application) -> None:
         signature = route_signature()
         state = self._path_params_state.get(application)
-        if state is None or state.signature != signature:
+        rebuilt = state is None or state.signature != signature
+        if state is None or rebuilt:
             state = _PathParamsCheck(
                 signature,
                 declared.declared_path_param_problems(
                     application,
                     self.guard_decorator or application.settings.get("guard_decorator"),
                 ),
-                state.reported if state else set(),
             )
             self._path_params_state[application] = state
         report_declared_path_params(
@@ -634,7 +633,7 @@ class SecurityMiddleware:
             application,
             None,
             problems=state.problems,
-            reported=state.reported,
+            log_refusal=rebuilt,
         )
 
     async def _run_pre_processing(

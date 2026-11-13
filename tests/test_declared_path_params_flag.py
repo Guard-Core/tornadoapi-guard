@@ -137,11 +137,19 @@ class Handlers:
 async def running() -> AsyncGenerator[Any, None]:
     started: list[tuple[tornado.httpserver.HTTPServer, SecurityMiddleware]] = []
 
-    async def start(build: Build, flag: bool) -> Handlers:
+    async def start(
+        build: Build,
+        flag: bool,
+        *,
+        fail_secure: bool = True,
+        passive_mode: bool = False,
+    ) -> Handlers:
         config = SecurityConfig(
             enable_redis=False,
             ban_on_hostile_signals=False,
             fail_on_misconfiguration=flag,
+            fail_secure=fail_secure,
+            passive_mode=passive_mode,
         )
         decorator = SecurityDecorator(config)
         middleware = SecurityMiddleware(config=config)
@@ -291,3 +299,32 @@ async def test_the_reporter_walks_the_application_itself_when_it_is_given_no_pro
     report_declared_path_params(served.middleware.config, served.app, served.decorator)
 
     assert len(_problems(caplog)) == 1
+
+
+@pytest.mark.parametrize(
+    ("fail_secure", "passive_mode"),
+    [(True, False), (False, False), (True, True)],
+    ids=["fail_secure", "fail_open", "passive"],
+)
+async def test_the_refusal_is_a_500_and_the_endpoint_never_runs(
+    running: Any, fail_secure: bool, passive_mode: bool
+) -> None:
+    ran: list[str] = []
+
+    def build(decorator: SecurityDecorator) -> Routes:
+        class Item(SecurityHandler):
+            @decorator.detection_exclusion(path_params={"ghost"})
+            def get(self, item_id: str) -> None:
+                ran.append(item_id)
+                self.write("ok")
+
+        return [(r"/items/(?P<item_id>[0-9]+)", Item)]
+
+    served = await running(
+        build, True, fail_secure=fail_secure, passive_mode=passive_mode
+    )
+
+    codes = [await _get(served.port, "/items/7") for _ in range(3)]
+
+    assert codes == [500, 500, 500]
+    assert ran == []
