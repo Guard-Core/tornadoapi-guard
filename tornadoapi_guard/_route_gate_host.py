@@ -23,7 +23,9 @@ _signature: ContextVar[tuple[int, int] | None] = ContextVar(
 )
 
 
-def hold_route_signature(signature: tuple[int, int]) -> Token[tuple[int, int] | None]:
+def hold_route_signature(
+    signature: tuple[int, int] | None,
+) -> Token[tuple[int, int] | None]:
     """The rule signature this request computed once, shared with route_template."""
     return _signature.set(signature)
 

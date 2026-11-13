@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import os
 import threading
@@ -119,6 +120,13 @@ def _nested_rules(target: object) -> Iterable[Rule] | None:
     if isinstance(target, Application):
         return target.default_router.rules
     return getattr(target, "rules", None)
+
+
+def _application_signature(application: Application) -> tuple[int, int] | None:
+    router = getattr(application, "default_router", None)
+    if router is None:
+        return None
+    return (id(router.rules), _rule_count(router.rules))
 
 
 def _rule_count(rules: Iterable[Rule]) -> int:
@@ -603,8 +611,9 @@ class SecurityMiddleware:
 
     async def run_pre_processing(self, handler: RequestHandler) -> GuardResponse | None:
         host_token = hold_route_gate_host(handler.request.headers.get("Host", ""))
-        rules = handler.application.default_router.rules
-        signature_token = hold_route_signature((id(rules), _rule_count(rules)))
+        signature_token = hold_route_signature(
+            _application_signature(handler.application)
+        )
         try:
             return await self._run_pre_processing(handler)
         finally:
@@ -613,7 +622,12 @@ class SecurityMiddleware:
 
     def _check_declared_path_params(self, application: Application) -> None:
         signature = route_signature()
-        state = self._path_params_state.get(application)
+        try:
+            state = self._path_params_state.get(application)
+        except TypeError:
+            # shortcut: a stand-in application that cannot be weakly referenced is
+            # checked on every request instead of cached; real ones never hit this
+            state = None
         if state is None or state.signature != signature:
             state = _PathParamsCheck(
                 signature,
@@ -623,7 +637,8 @@ class SecurityMiddleware:
                 ),
                 state.reported if state else set(),
             )
-            self._path_params_state[application] = state
+            with contextlib.suppress(TypeError):
+                self._path_params_state[application] = state
         report_declared_path_params(
             self.config,
             application,

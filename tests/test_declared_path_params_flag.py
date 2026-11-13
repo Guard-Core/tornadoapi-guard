@@ -278,3 +278,16 @@ def build_valid_for_count(decorator: SecurityDecorator) -> Routes:
     from tests.test_declared_path_params import build_valid
 
     return build_valid(decorator)
+
+
+async def test_the_reporter_walks_the_application_itself_when_it_is_given_no_problems(
+    running: Any, caplog: pytest.LogCaptureFixture
+) -> None:
+    from tornadoapi_guard._declared_path_params import report_declared_path_params
+
+    served = await running(build_missing, False)
+    caplog.set_level(logging.WARNING, logger=LOGGER)
+
+    report_declared_path_params(served.middleware.config, served.app, served.decorator)
+
+    assert len(_problems(caplog)) == 1
