@@ -22,7 +22,7 @@ from guard_core import (
     security_headers_manager,
     sus_patterns_handler,
 )
-from guard_core._config_capabilities import register_adapter
+from guard_core.adapter_support import register_adapter
 
 from tornadoapi_guard.adapters import (
     TornadoGuardRequest,

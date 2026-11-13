@@ -13,6 +13,8 @@ ___
 Unreleased
 ----------
 
+- **Changed** - **The adapter imports guard-core internals only from `guard_core.adapter_support`.** It used to import the private `_misconfiguration`, `_misconfiguration_kinds`, `_utils` and `_config_capabilities` modules directly, so an engine refactor could break an installed adapter. The names are the same objects and nothing behaves differently; the module is part of guard-core's stable 5.x surface and a guard-core test pins its names.
+
 - **Fixed** - **A decorator given to `set_decorator_handler` is adopted through guard-core (release note, behavior change).** The setter stored the decorator on the middleware only, so a late decorator never had the app's ban manager injected, its tracker connected to Redis or its geo handler built. Every way a decorator reaches the middleware now goes through guard-core's `HandlerInitializer.adopt_decorator`, so a late decorator gets the app's ban manager injected (a behavior rule with action ban bans on the app's manager, not the default one), its tracker connected to Redis, its geo handler built for route country rules and its misconfigurations reported once, and the middleware completes the adoption on every request through the engine's one-read fast path. A raise in the adoption leaves the previous decorator bound everywhere.
 
 - **Fixed** - **A nested `Application` whose own `SecurityMiddleware` has no decorator that knows a handler's route is reported.** The walk used to skip every nested application that carried its own guard, so a handler decorated by the outer decorator and served by an inner guard with no decorator ran its route decorators never, and nothing said so. The walk now checks a nested application's handlers against the decorator of the guard that serves them.
