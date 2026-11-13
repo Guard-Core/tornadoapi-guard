@@ -6,6 +6,8 @@ ___
 Unreleased
 ----------
 
+- **Fixed (docs)** - **`docs/release-notes.md` and `CHANGELOG.md` carry the same version sections, and a test keeps it true.** `v1.2.0` was marked unreleased though its tag exists (2026-09-30), and `v1.2.0` and `v0.0.1` were missing from the release notes. `tests/test_release_notes_parity.py` compares every section of both files.
+
 - **Changed** - **The adapter imports guard-core internals only from `guard_core.adapter_support`.** It used to import the private `_misconfiguration`, `_misconfiguration_kinds`, `_utils` and `_config_capabilities` modules directly, so an engine refactor could break an installed adapter. The names are the same objects and nothing behaves differently; the module is part of guard-core's stable 5.x surface and a guard-core test pins its names.
 
 - **Fixed** - **A decorator given to `set_decorator_handler` is adopted through guard-core (release note, behavior change).** The setter stored the decorator on the middleware only, so a late decorator never had the app's ban manager injected, its tracker connected to Redis or its geo handler built. Every way a decorator reaches the middleware now goes through guard-core's `HandlerInitializer.adopt_decorator`, so a late decorator gets the app's ban manager injected (a behavior rule with action ban bans on the app's manager, not the default one), its tracker connected to Redis, its geo handler built for route country rules and its misconfigurations reported once, and the middleware completes the adoption on every request through the engine's one-read fast path. A raise in the adoption leaves the previous decorator bound everywhere.
@@ -142,7 +144,7 @@ Metadata release: PyPI project URLs, the docs canonical domain, and all reposito
 
 ___
 
-v1.2.0 (unreleased)
+v1.2.0 (2026-09-30)
 -------------------
 
 Adapter parity with the family baseline (targets the 1.2.0 adapter train)
@@ -246,7 +248,7 @@ v1.0.0 (2026-04-16)
 -------------------
 
 Initial Release (v1.0.0)
-------------
+------------------------
 
 - **Tornado adapter layer**: `TornadoGuardRequest`, `TornadoGuardResponse`, `TornadoResponseFactory` mapping Tornado's `RequestHandler` to guard-core's protocol interface.
 - **SecurityHandler**: Base handler subclass integrating guard-core's security pipeline via `prepare()` / `on_finish()` hooks.
@@ -263,7 +265,7 @@ v0.0.1 (2026-04-05)
 -------------------
 
 Initial Release (v0.0.1)
-------------
+------------------------
 
 - **Initial project scaffolding**: Project structure matching Guard ecosystem conventions.
 - **Guard-core integration**: Thin adapter over [guard-core](https://github.com/rennf93/guard-core), the framework-agnostic security engine.

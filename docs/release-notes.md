@@ -13,6 +13,8 @@ ___
 Unreleased
 ----------
 
+- **Fixed (docs)** - **`docs/release-notes.md` and `CHANGELOG.md` carry the same version sections, and a test keeps it true.** `v1.2.0` was marked unreleased though its tag exists (2026-09-30), and `v1.2.0` and `v0.0.1` were missing from the release notes. `tests/test_release_notes_parity.py` compares every section of both files.
+
 - **Changed** - **The adapter imports guard-core internals only from `guard_core.adapter_support`.** It used to import the private `_misconfiguration`, `_misconfiguration_kinds`, `_utils` and `_config_capabilities` modules directly, so an engine refactor could break an installed adapter. The names are the same objects and nothing behaves differently; the module is part of guard-core's stable 5.x surface and a guard-core test pins its names.
 
 - **Fixed** - **A decorator given to `set_decorator_handler` is adopted through guard-core (release note, behavior change).** The setter stored the decorator on the middleware only, so a late decorator never had the app's ban manager injected, its tracker connected to Redis or its geo handler built. Every way a decorator reaches the middleware now goes through guard-core's `HandlerInitializer.adopt_decorator`, so a late decorator gets the app's ban manager injected (a behavior rule with action ban bans on the app's manager, not the default one), its tracker connected to Redis, its geo handler built for route country rules and its misconfigurations reported once, and the middleware completes the adoption on every request through the engine's one-read fast path. A raise in the adoption leaves the previous decorator bound everywhere.
@@ -22,6 +24,8 @@ Unreleased
 - **Changed** - **`fail_on_misconfiguration` now governs the first-request report of a `detection_exclusion(path_params=...)` problem (release note, behavior change).** The first request used to log one WARNING whatever the flag said. The adapter first sees the Application at a request and `add_handlers` can still add routes, so the first request is the earliest point it can check: with `fail_on_misconfiguration=True` a request now raises a fresh engine error (a `ValueError` listing every problem, Tornado answers 500) built from the cached result, and the Application is walked again only when its rules change, so a route that `add_handlers` adds later is checked too and joins the error. Noticing that a rule changed costs the same at any route count: the adapter compares the identity and length of each router's rule list (one comparison per router, so a nested router adds one) instead of counting every rule on every request, and it holds only those numbers per application, so a collected application is freed. With the flag off the first request logs one WARNING per problem, as before, and a route added later logs its own once. Each problem carries a stable kind, `decorator.detection_exclusion.param_not_in_template` or `decorator.detection_exclusion.param_without_literal_segment`, from one guard-core helper that every adapter shares.
 
 - **Fixed** - **A handler decorated by a different `SecurityDecorator` is reported at the first request, and a nested `Application` that carries its own `SecurityMiddleware` is left to it (release note, behavior change).** A handler whose route id the middleware's decorator does not know was decorated by another `SecurityDecorator` instance, so none of its decorators applied, and the check of the rules skipped it without a word. The first request, and each change of the rules, now report it with guard-core's `route.unknown_to_decorator` kind: with `fail_on_misconfiguration=True` every request is refused with a fresh `MisconfigurationError` until the handler uses the middleware's decorator, with it off one WARNING is logged per handler. A decorator that was created and decorated nothing, and a route that uses the middleware's decorator, are not reported. A nested `Application` whose settings carry a `SecurityMiddleware` of its own is no longer walked by the outer one, so an owned sub-application no longer draws the outer middleware's warning, and its own middleware alone enforces its handlers. A nested `Application` served by the same middleware is still checked.
+
+- **Added** - **A `detection_exclusion(path_params=...)` name its route does not have is logged at the first request.** The first request through an `Application` reads its rules (host rules and nested applications included) and logs once per application, as a WARNING, each declared name that is missing from the route's regex or has no literal segment before it; a rule with positional groups has no names, so any declared name there is reported. A handler on several rules is checked per rule. It never raises, whatever `fail_on_misconfiguration` says.
 
 - **Added** - **`release_app(config)` is the host and test API for releasing an app.** Tornado offers no shutdown hook that this adapter uses (the application is not told when its server stops), so `SecurityMiddleware` never releases its app by itself and N requests through an application leave the module-level default binding as it was. A host that stops a server, and a test suite that builds several apps, call `tornadoapi_guard.release_app(config)` (guard-core's `release_app`, now re-exported) with the `SecurityConfig` the middleware was built with; the default managers then go to the next app at that moment instead of whenever the cyclic garbage collector frees the earlier app. An app that is never released keeps the collector-timed handoff of guard-core 5.0.0. Calling it twice is harmless, and a request that reaches a released app is still screened with the managers its pipeline captured at build time. Never call it from `RequestHandler.on_finish` or `on_connection_close`: it would release a live app on every request. The suite's `tests/conftest.py` releases every app's config between tests.
 
@@ -147,6 +151,18 @@ Metadata release: PyPI project URLs, the docs canonical domain, and all reposito
 
 ___
 
+v1.2.0 (2026-09-30)
+-------------------
+
+Adapter parity with the family baseline (targets the 1.2.0 adapter train)
+
+- **CI modernization** - `ci.yml` uses `pull_request` instead of `pull_request_target` (no base-branch secrets context on PR code), all actions align on v7 majors, and the release build uses `python -m build` instead of the legacy `setup.py sdist bdist_wheel`.
+- **New workflows to match the adapter set** - `live-smoke.yml` (builds the wheel from the checkout and smoke-tests the example app in Docker), `upstream-drift.yml` (daily suite run against a guard-core@master wheel), and `docksec.yml` (Dockerfile scanning with SARIF).
+- **Added (examples)** - `examples/advanced_app`: production-shaped topology with an nginx edge (connection shedding, forwarded headers), Redis-backed guard state, health/ready endpoints for orchestration, a route-scoped strict rate limit, and an admin-token-protected utility route.
+- **Docs deploy serialization** - `docs.yml` gains the `docs-deploy` concurrency group the other adapters already use.
+
+___
+
 v1.0.0 (2026-09-24)
 -------------------
 
@@ -248,4 +264,18 @@ Initial Release (v1.0.0)
 - **Example application**: Comprehensive Tornado app demonstrating IP filtering, rate limiting, behavioral analysis, security headers, decorators, and WebSocket support.
 - **Full documentation**: MkDocs site with API reference, configuration guides, decorator usage, and security tutorials.
 - **CI/CD**: GitHub Actions workflows for CI, CodeQL, container release, docs deployment, scheduled linting, and PyPI release.
+- **Development tooling**: Pre-commit hooks, Makefile targets, Docker Compose setup, Python 3.10-3.14 support.
+
+___
+
+v0.0.1 (2026-04-05)
+-------------------
+
+Initial Release (v0.0.1)
+------------------------
+
+- **Initial project scaffolding**: Project structure matching Guard ecosystem conventions.
+- **Guard-core integration**: Thin adapter over [guard-core](https://github.com/rennf93/guard-core), the framework-agnostic security engine.
+- **Tornado adapters**: `TornadoGuardRequest`, `TornadoGuardResponse`, `TornadoResponseFactory` for mapping Tornado's `RequestHandler` to guard-core interfaces.
+- **CI/CD pipeline**: GitHub Actions workflows for CI, release, CodeQL, docs, container release, and scheduled linting.
 - **Development tooling**: Pre-commit hooks, Makefile targets, Docker Compose setup, Python 3.10-3.14 support.
