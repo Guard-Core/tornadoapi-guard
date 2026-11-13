@@ -31,6 +31,13 @@ class _StampedEndpoint:
         return None
 
 
+class _FakeApplication:
+    """A weakly referenceable stand-in, like a real Application."""
+
+    def __init__(self, settings: dict[str, object]) -> None:
+        self.settings = settings
+
+
 class _FakeHandler:
     def __init__(
         self,
@@ -71,7 +78,7 @@ def _make_handler(
         query_arguments={},
         full_url=lambda: f"http://localhost{path}",
     )
-    application = SimpleNamespace(settings=settings or {})
+    application = _FakeApplication(settings or {})
     handler = _FakeHandler(request=request, application=application)
     if endpoint_value is not None:
         setattr(handler, endpoint_attr, endpoint_value)

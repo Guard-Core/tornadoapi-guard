@@ -17,6 +17,13 @@ from tornadoapi_guard.adapters import (
 )
 
 
+class _FakeApplication:
+    """A weakly referenceable stand-in, like a real Application."""
+
+    def __init__(self, settings: dict[str, object]) -> None:
+        self.settings = settings
+
+
 class _FakeHandler:
     def __init__(self, request: object, application: object) -> None:
         self.request = request
@@ -48,7 +55,7 @@ def make_handler(
         query_arguments=query_arguments or {},
         full_url=lambda: f"{protocol}://localhost{path}",
     )
-    application = SimpleNamespace(settings=settings or {})
+    application = _FakeApplication(settings or {})
     return cast(RequestHandler, _FakeHandler(request=request, application=application))
 
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import inspect
 import os
 import threading
@@ -245,9 +244,6 @@ class SecurityMiddleware:
         self._build_event_bus_and_contexts()
 
         self._initialized = False
-        # shortcut: an id can be reused by a later Application once the first is
-        # collected, which skips that one's check; upgrade if applications are made per
-        # request
         self._path_params_state: weakref.WeakKeyDictionary[
             Application, _PathParamsCheck
         ] = weakref.WeakKeyDictionary()
@@ -622,12 +618,7 @@ class SecurityMiddleware:
 
     def _check_declared_path_params(self, application: Application) -> None:
         signature = route_signature()
-        try:
-            state = self._path_params_state.get(application)
-        except TypeError:
-            # shortcut: a stand-in application that cannot be weakly referenced is
-            # checked on every request instead of cached; real ones never hit this
-            state = None
+        state = self._path_params_state.get(application)
         if state is None or state.signature != signature:
             state = _PathParamsCheck(
                 signature,
@@ -637,8 +628,7 @@ class SecurityMiddleware:
                 ),
                 state.reported if state else set(),
             )
-            with contextlib.suppress(TypeError):
-                self._path_params_state[application] = state
+            self._path_params_state[application] = state
         report_declared_path_params(
             self.config,
             application,
