@@ -6,6 +6,24 @@ ___
 Unreleased
 ----------
 
+- **Added** - **An "Upgrading to 5.0.0" page explains the route id error a test application raises with a `SecurityDecorator` of its own.** It quotes the `MisconfigurationError` message and the fix: build the test application the way production does, with the application's own decorator as the `guard_decorator` setting, and never switch `fail_on_misconfiguration` off for it.
+
+- **Added** - **`tornadoapi-guard[agent]` installs `guard-agent`, and the agent options behave as in fastapi-guard (release note, behavior change).** The extra (`guard-agent>=3.2.4`) is listed in the README and the installation page, and the agent pages say `pip install "tornadoapi-guard[agent]"`. An agent that fails to initialize now fires the `on_error` hook with the stage `agent_init`, raises under `agent_strict=True`, and otherwise logs the error and continues with `agent_degraded` set. `agent_stats` reports `degraded`, so it answers `{"enabled": False, "degraded": False}` where it answered `{"enabled": False}`. A missing `guard-agent` used to raise from the middleware's constructor even with `agent_strict=False`; it now degrades.
+
+- **Fixed** - **A decorator set as the `guard_decorator` application setting is adopted through guard-core like one given to `set_decorator_handler` (release note, behavior change).** The settings path only put the decorator on the request state, so the engine never adopted it: its ban rules did not reach the application's ban manager, its geo source was not built and the behavior and response contexts did not hold it. The first request now adopts it through `set_decorator_handler`; a decorator already set on the middleware still wins.
+
+- **Changed (behavior)** - **A `SecurityHandler` or `SecurityWebSocketHandler` whose application has no `security_middleware` setting is refused instead of served unguarded (release note, behavior change).** A missing or misspelled key used to make `prepare()` return silently. With `fail_on_misconfiguration=True` (the 5.0.0 default) the request now fails with a `MisconfigurationError` (a 500), and the message names a `SecurityMiddleware` found under another settings key. With `fail_on_misconfiguration=False` the request is served unguarded and a warning is logged once per application. Test fixtures that need no middleware should subclass `tornado.web.RequestHandler`.
+
+- **Fixed** - **The app scope is held before the pipeline runs, on HTTP and on the WebSocket upgrade.** `prepare()` held it after `run_pre_processing`, so the checks of a request ran without their application's scope, and `SecurityWebSocketHandler` never held it.
+
+- **Fixed** - **A header the handler sets more than once keeps every value.** The response wrapper copied the handler's headers into a dict, so the engine saw only the last value of a repeated header and its CORS `Vary` merge replaced the others. The wrapper now holds Tornado's `HTTPHeaders`, which keeps every value.
+
+- **Fixed (docs)** - **The docs count the checks the factory builds.** They said 17 checks where the engine's default pipeline holds up to 18.
+
+- **Added (test)** - **A test pins what `xheaders` does.** The adapter's client address is Tornado's `request.remote_ip`, so `HTTPServer(xheaders=True)` lets the `X-Real-Ip` header decide the client identity and `False` keeps the peer address, as `docs/tutorial/security/proxy-security.md` says.
+
+- **Fixed (docs)** - **`docs/release-notes.md` and `CHANGELOG.md` carry the same version sections, and a test keeps it true.** `v1.2.0` was marked unreleased though its tag exists (2026-09-30), and `v1.2.0` and `v0.0.1` were missing from the release notes. `tests/test_release_notes_parity.py` compares every section of both files.
+
 - **Changed** - **The adapter imports guard-core internals only from `guard_core.adapter_support`.** It used to import the private `_misconfiguration`, `_misconfiguration_kinds`, `_utils` and `_config_capabilities` modules directly, so an engine refactor could break an installed adapter. The names are the same objects and nothing behaves differently; the module is part of guard-core's stable 5.x surface and a guard-core test pins its names.
 
 - **Fixed** - **A decorator given to `set_decorator_handler` is adopted through guard-core (release note, behavior change).** The setter stored the decorator on the middleware only, so a late decorator never had the app's ban manager injected, its tracker connected to Redis or its geo handler built. Every way a decorator reaches the middleware now goes through guard-core's `HandlerInitializer.adopt_decorator`, so a late decorator gets the app's ban manager injected (a behavior rule with action ban bans on the app's manager, not the default one), its tracker connected to Redis, its geo handler built for route country rules and its misconfigurations reported once, and the middleware completes the adoption on every request through the engine's one-read fast path. A raise in the adoption leaves the previous decorator bound everywhere.
@@ -142,7 +160,7 @@ Metadata release: PyPI project URLs, the docs canonical domain, and all reposito
 
 ___
 
-v1.2.0 (unreleased)
+v1.2.0 (2026-09-30)
 -------------------
 
 Adapter parity with the family baseline (targets the 1.2.0 adapter train)
@@ -246,7 +264,7 @@ v1.0.0 (2026-04-16)
 -------------------
 
 Initial Release (v1.0.0)
-------------
+------------------------
 
 - **Tornado adapter layer**: `TornadoGuardRequest`, `TornadoGuardResponse`, `TornadoResponseFactory` mapping Tornado's `RequestHandler` to guard-core's protocol interface.
 - **SecurityHandler**: Base handler subclass integrating guard-core's security pipeline via `prepare()` / `on_finish()` hooks.
@@ -263,7 +281,7 @@ v0.0.1 (2026-04-05)
 -------------------
 
 Initial Release (v0.0.1)
-------------
+------------------------
 
 - **Initial project scaffolding**: Project structure matching Guard ecosystem conventions.
 - **Guard-core integration**: Thin adapter over [guard-core](https://github.com/rennf93/guard-core), the framework-agnostic security engine.

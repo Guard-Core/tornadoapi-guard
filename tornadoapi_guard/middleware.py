@@ -22,7 +22,7 @@ from guard_core.core.responses import ErrorResponseFactory, ResponseContext
 from guard_core.core.routing import RouteConfigResolver, RoutingContext
 from guard_core.core.validation import RequestValidator, ValidationContext
 from guard_core.decorators.base import BaseSecurityDecorator, RouteConfig
-from guard_core.exceptions import GuardRedisError
+from guard_core.exceptions import AgentPackageNotInstalledError, GuardRedisError
 from guard_core.handlers.cloud_handler import cloud_handler_for
 from guard_core.handlers.cors_handler import CorsHandler, is_preflight
 from guard_core.handlers.ratelimit_handler import RateLimitManager
@@ -31,7 +31,11 @@ from guard_core.models import SecurityConfig
 from guard_core.protocols.agent_protocol import AgentHandlerProtocol, JsonValue
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
-from guard_core.utils import extract_client_ip, setup_custom_logging
+from guard_core.utils import (
+    extract_client_ip,
+    invoke_error_hook,
+    setup_custom_logging,
+)
 from tornado.httputil import (
     HTTPConnection,
     HTTPHeaders,
@@ -249,26 +253,29 @@ class SecurityMiddleware:
             self.redis_handler = RedisManager(config)
 
         self.agent_handler: AgentHandlerProtocol | None = None
+        self.agent_degraded = False
         if config.enable_agent:
-            agent_config = config.to_agent_config()
-            if agent_config:
-                try:
-                    from guard_agent import GuardAgentHandler
+            try:
+                agent_config = config.to_agent_config()
+                from guard_agent import GuardAgentHandler
 
-                    self.agent_handler = GuardAgentHandler(agent_config)
-                    self.logger.info("Guard Agent initialized successfully")
-                except ImportError:
-                    self.logger.warning(
-                        "Agent enabled but guard_agent package not installed. "
-                        "Install with: pip install guard-agent"
+                if agent_config is None:
+                    raise ValueError(
+                        "Agent enabled but configuration is invalid. "
+                        "Check agent_api_key and other required fields."
                     )
-                except Exception as e:
-                    self.logger.error(f"Failed to initialize Guard Agent: {e}")
-                    self.logger.warning("Continuing without agent functionality")
-            else:
-                self.logger.warning(
-                    "Agent enabled but configuration is invalid. "
-                    "Check agent_api_key and other required fields."
+                self.agent_handler = GuardAgentHandler(agent_config)
+                self.logger.info("Guard Agent initialized successfully")
+            except AgentPackageNotInstalledError as e:
+                self._on_agent_init_failed(
+                    config,
+                    e,
+                    "Agent enabled but guard-agent is not installed. "
+                    "Install with: pip install tornadoapi-guard[agent]",
+                )
+            except Exception as e:
+                self._on_agent_init_failed(
+                    config, e, f"Failed to initialize Guard Agent: {e}"
                 )
 
         self.security_pipeline: SecurityCheckPipeline | None = None
@@ -375,12 +382,22 @@ class SecurityMiddleware:
     def guard_response_factory(self) -> TornadoResponseFactory:
         return self._guard_response_factory
 
+    def _on_agent_init_failed(
+        self, config: SecurityConfig, exc: Exception, message: str
+    ) -> None:
+        self.agent_degraded = True
+        invoke_error_hook(config.on_error, "agent_init", exc, {})
+        if config.agent_strict:
+            raise exc
+        self.logger.error(message)
+        self.logger.warning("Continuing without agent functionality")
+
     @property
     def agent_stats(self) -> dict[str, JsonValue]:
         if self.agent_handler is None:
-            return {"enabled": False}
+            return {"enabled": False, "degraded": self.agent_degraded}
         handler_stats = self.agent_handler.get_stats()
-        return {"enabled": True, **handler_stats}
+        return {"enabled": True, "degraded": self.agent_degraded, **handler_stats}
 
     def _configure_security_headers(self, config: SecurityConfig) -> None:
         apply_security_headers_settings(security_headers_manager, config)
@@ -693,6 +710,12 @@ class SecurityMiddleware:
             release_route_signature(signature_token)
             release_route_gate_host(host_token)
 
+    def _adopt_settings_decorator(self, application: Application) -> None:
+        # The settings path adopts like the setter; a decorator already set wins.
+        declared_decorator = application.settings.get("guard_decorator")
+        if self.guard_decorator is None and declared_decorator is not None:
+            self.set_decorator_handler(declared_decorator)
+
     def _check_declared_path_params(self, application: Application) -> None:
         signature = route_signature()
         state = self._path_params_state.get(application)
@@ -718,6 +741,7 @@ class SecurityMiddleware:
         self, handler: RequestHandler
     ) -> GuardResponse | None:
         guard_request = TornadoGuardRequest(handler)
+        self._adopt_settings_decorator(handler.application)
         self._check_declared_path_params(handler.application)
         try:
             await self._ensure_initialized()

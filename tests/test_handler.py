@@ -33,13 +33,15 @@ async def unguarded_server() -> AsyncGenerator[int, None]:
         server.stop()
 
 
-async def test_handler_without_middleware_serves_normally(
+async def test_handler_without_middleware_is_refused(
     unguarded_server: int,
 ) -> None:
     client = AsyncHTTPClient()
     try:
-        response = await client.fetch(f"http://127.0.0.1:{unguarded_server}/")
-        assert response.code == 200
+        response = await client.fetch(
+            f"http://127.0.0.1:{unguarded_server}/", raise_error=False
+        )
+        assert response.code == 500
     finally:
         client.close()
 

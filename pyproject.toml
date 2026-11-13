@@ -49,6 +49,9 @@ Changelog = "https://github.com/Guard-Core/tornadoapi-guard/blob/master/CHANGELO
 "Bug Tracker" = "https://github.com/Guard-Core/tornadoapi-guard/issues"
 
 [project.optional-dependencies]
+agent = [
+    "guard-agent>=3.2.4",
+]
 redis = [
     "guard-core[redis]",
 ]

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 
 from guard_core.protocols.response_protocol import GuardResponse
+from tornado.httputil import HTTPHeaders
 
 if TYPE_CHECKING:
     from tornado.web import RequestHandler
@@ -128,10 +129,9 @@ class TornadoGuardResponse:
     @classmethod
     def from_handler(cls, handler: RequestHandler) -> TornadoGuardResponse:
         raw_headers = getattr(handler, "_headers", None)
-        headers: dict[str, str] = (
-            {name: value for name, value in raw_headers.get_all()}
-            if raw_headers is not None
-            else {}
+        # HTTPHeaders keeps every value of a repeated header (read back joined).
+        headers: MutableMapping[str, str] = (
+            HTTPHeaders(raw_headers) if raw_headers is not None else HTTPHeaders()
         )
         buffer = getattr(handler, "_write_buffer", None)
         body = b"".join(buffer) if buffer else b""

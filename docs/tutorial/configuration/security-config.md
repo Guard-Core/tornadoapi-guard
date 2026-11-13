@@ -194,24 +194,24 @@ Dynamic rules: a dynamic rule adds to your configuration and never wipes it. Blo
 
 Setting `enable_agent=True` without `agent_api_key` raises a validation error. Setting `enable_dynamic_rules=True` without `enable_agent=True` also raises.
 
-Install the agent package separately (framework-agnostic; the legacy `fastapi-guard-agent` meta-package still works):
+Install the agent through the adapter's `agent` extra, which adds `guard-agent`:
 
 === "uv"
 
     ```bash
-    uv add guard-agent
+    uv add "tornadoapi-guard[agent]"
     ```
 
 === "poetry"
 
     ```bash
-    poetry add guard-agent
+    poetry add "tornadoapi-guard[agent]"
     ```
 
 === "pip"
 
     ```bash
-    pip install guard-agent
+    pip install "tornadoapi-guard[agent]"
     ```
 
 ___
