@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from contextvars import Token
 
-from guard_core._utils.app_scope import AppScope, hold_app_scope, release_app_scope
+from guard_core.adapter_support import AppScope, hold_app_scope, release_app_scope
 from tornado.web import OutputTransform, RequestHandler
 from tornado.websocket import WebSocketHandler
 

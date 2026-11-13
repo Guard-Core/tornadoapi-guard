@@ -11,8 +11,7 @@ from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from guard_core import apply_security_headers_settings
-from guard_core._misconfiguration_kinds import Problem
-from guard_core._utils.sampling import observe_sampled_key
+from guard_core.adapter_support import Problem, observe_sampled_key
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
 from guard_core.core.checks.pipeline import SecurityCheckPipeline
