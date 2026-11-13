@@ -112,7 +112,7 @@ class _PathParamsCheck:
     problems: list[Problem]
 
 
-def _nested_rules(target: object) -> Iterable[Rule] | None:
+def _nested_rules(target: object) -> list[Rule] | None:
     # A nested Application routes through its own default router, whose rules are
     # the ones its requests match.
     if isinstance(target, Application):
@@ -120,15 +120,74 @@ def _nested_rules(target: object) -> Iterable[Rule] | None:
     return getattr(target, "rules", None)
 
 
-def _application_signature(application: Application) -> tuple[int, int] | None:
-    router = getattr(application, "default_router", None)
-    if router is None:
-        return None
-    return (id(router.rules), _rule_count(router.rules))
+@dataclass(frozen=True)
+class _NestedRules:
+    # Weak, because a router that holds `.application` would keep its parent alive.
+    owner: weakref.ref[object]
+    rules_id: int
+    length: int
+
+    def is_unchanged(self) -> bool:
+        owner = self.owner()
+        rules = None if owner is None else _nested_rules(owner)
+        return (
+            rules is not None
+            and id(rules) == self.rules_id
+            and len(rules) == self.length
+        )
 
 
-def _rule_count(rules: Iterable[Rule]) -> int:
-    return sum(1 + _rule_count(_nested_rules(rule.target) or ()) for rule in rules)
+@dataclass(frozen=True)
+class _RouteSignature:
+    # Only ids and lengths: the top-level rules reach the Application through
+    # their router's `.application`, so holding the list would keep its key alive.
+    value: tuple[int, int]
+    top_length: int
+    nested: tuple[_NestedRules, ...]
+
+    def is_unchanged(self, rules: list[Rule]) -> bool:
+        return (
+            id(rules) == self.value[0]
+            and len(rules) == self.top_length
+            and all(container.is_unchanged() for container in self.nested)
+        )
+
+
+def _walk_route_signature(rules: list[Rule]) -> _RouteSignature:
+    nested: list[_NestedRules] = []
+
+    def count(level: list[Rule]) -> int:
+        total = 0
+        for rule in level:
+            total += 1
+            inner = _nested_rules(rule.target)
+            if inner is not None:
+                nested.append(
+                    _NestedRules(weakref.ref(rule.target), id(inner), len(inner))
+                )
+                total += count(inner)
+        return total
+
+    return _RouteSignature((id(rules), count(rules)), len(rules), tuple(nested))
+
+
+class _RouteSignatures:
+    """The rule signature per Application, walked again when a rule list changed."""
+
+    def __init__(self) -> None:
+        self._by_application: weakref.WeakKeyDictionary[
+            Application, _RouteSignature
+        ] = weakref.WeakKeyDictionary()
+
+    def of(self, application: Application) -> tuple[int, int] | None:
+        router = getattr(application, "default_router", None)
+        if router is None:
+            return None
+        known = self._by_application.get(application)
+        if known is None or not known.is_unchanged(router.rules):
+            known = _walk_route_signature(router.rules)
+            self._by_application[application] = known
+        return known.value
 
 
 def _matched_template(rules: Iterable[Rule], request: HTTPServerRequest) -> str | None:
@@ -246,6 +305,7 @@ class SecurityMiddleware:
         self._path_params_state: weakref.WeakKeyDictionary[
             Application, _PathParamsCheck
         ] = weakref.WeakKeyDictionary()
+        self._route_signatures = _RouteSignatures()
         self._init_lock = asyncio.Lock()
 
     def _is_initialized(self) -> bool:
@@ -430,7 +490,7 @@ class SecurityMiddleware:
         if application is None:
             return None
         rules = application.default_router.rules
-        signature = route_signature() or (id(rules), _rule_count(rules))
+        signature = route_signature() or self._route_signatures.of(application)
         if signature != self._route_template_signature:
             self._route_template_cache.clear()
             self._route_template_signature = signature
@@ -607,7 +667,7 @@ class SecurityMiddleware:
     async def run_pre_processing(self, handler: RequestHandler) -> GuardResponse | None:
         host_token = hold_route_gate_host(handler.request.headers.get("Host", ""))
         signature_token = hold_route_signature(
-            _application_signature(handler.application)
+            self._route_signatures.of(handler.application)
         )
         try:
             return await self._run_pre_processing(handler)
