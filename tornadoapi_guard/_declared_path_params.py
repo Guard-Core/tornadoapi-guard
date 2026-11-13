@@ -63,13 +63,25 @@ def report_declared_path_params(
     config: SecurityConfig,
     application: Application,
     guard_decorator: BaseSecurityDecorator | None,
+    *,
+    problems: list[Problem] | None = None,
+    reported: set[str] | None = None,
 ) -> None:
-    """The one report point, at the first request, the earliest point the adapter
-    has the Application (add_handlers can still add routes later):
-    fail_on_misconfiguration decides between a raise and one warning."""
-    report_misconfigurations(
-        config,
-        declared_path_param_problems(application, guard_decorator),
-        logger=config_logger,
-        stacklevel=2,
-    )
+    """The one report point, at the first request and again whenever the rules
+    change (add_handlers can add routes later). With fail_on_misconfiguration every
+    request raises a fresh error from the cached problems and the new ones are
+    logged once; without it each problem is warned once."""
+    if problems is None:
+        problems = declared_path_param_problems(application, guard_decorator)
+    seen = set() if reported is None else reported
+    fresh = [problem for problem in problems if str(problem) not in seen]
+    seen.update(str(problem) for problem in fresh)
+    if config.fail_on_misconfiguration:
+        if fresh:
+            config_logger.error(
+                "Every request is refused until this is fixed: %s",
+                "; ".join(fresh),
+            )
+        report_misconfigurations(config, problems, logger=config_logger, stacklevel=2)
+        return
+    report_misconfigurations(config, fresh, logger=config_logger, stacklevel=2)

@@ -18,5 +18,23 @@ def release_route_gate_host(token: Token[str]) -> None:
     _host.reset(token)
 
 
+_signature: ContextVar[tuple[int, int] | None] = ContextVar(
+    "guard_route_signature", default=None
+)
+
+
+def hold_route_signature(signature: tuple[int, int]) -> Token[tuple[int, int] | None]:
+    """The rule signature this request computed once, shared with route_template."""
+    return _signature.set(signature)
+
+
+def release_route_signature(token: Token[tuple[int, int] | None]) -> None:
+    _signature.reset(token)
+
+
+def route_signature() -> tuple[int, int] | None:
+    return _signature.get()
+
+
 def route_gate_host() -> str:
     return _host.get()

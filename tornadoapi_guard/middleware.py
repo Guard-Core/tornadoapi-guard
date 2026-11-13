@@ -5,10 +5,13 @@ import inspect
 import os
 import threading
 import time
+import weakref
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
 from guard_core import apply_security_headers_settings
+from guard_core._misconfiguration_kinds import Problem
 from guard_core._utils.sampling import observe_sampled_key
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
@@ -45,11 +48,17 @@ from tornado.web import (
     StaticFileHandler,
 )
 
-from tornadoapi_guard._declared_path_params import report_declared_path_params
+from tornadoapi_guard import _declared_path_params as declared
+from tornadoapi_guard._declared_path_params import (
+    report_declared_path_params,
+)
 from tornadoapi_guard._route_gate_host import (
     hold_route_gate_host,
+    hold_route_signature,
     release_route_gate_host,
+    release_route_signature,
     route_gate_host,
+    route_signature,
 )
 from tornadoapi_guard.adapters import (
     TornadoGuardRequest,
@@ -95,6 +104,13 @@ class _NoConnection(HTTPConnection):
 
 def _bounded_key_part(text: str) -> str | int:
     return text if len(text) <= _ROUTE_TEMPLATE_KEY_MAX_LENGTH else hash(text)
+
+
+@dataclass
+class _PathParamsCheck:
+    signature: tuple[int, int] | None
+    problems: list[Problem]
+    reported: set[str]
 
 
 def _nested_rules(target: object) -> Iterable[Rule] | None:
@@ -224,7 +240,9 @@ class SecurityMiddleware:
         # shortcut: an id can be reused by a later Application once the first is
         # collected, which skips that one's check; upgrade if applications are made per
         # request
-        self._path_params_checked: set[int] = set()
+        self._path_params_state: weakref.WeakKeyDictionary[
+            Application, _PathParamsCheck
+        ] = weakref.WeakKeyDictionary()
         self._init_lock = asyncio.Lock()
 
     def _is_initialized(self) -> bool:
@@ -409,7 +427,7 @@ class SecurityMiddleware:
         if application is None:
             return None
         rules = application.default_router.rules
-        signature = (id(rules), _rule_count(rules))
+        signature = route_signature() or (id(rules), _rule_count(rules))
         if signature != self._route_template_signature:
             self._route_template_cache.clear()
             self._route_template_signature = signature
@@ -585,23 +603,40 @@ class SecurityMiddleware:
 
     async def run_pre_processing(self, handler: RequestHandler) -> GuardResponse | None:
         host_token = hold_route_gate_host(handler.request.headers.get("Host", ""))
+        rules = handler.application.default_router.rules
+        signature_token = hold_route_signature((id(rules), _rule_count(rules)))
         try:
             return await self._run_pre_processing(handler)
         finally:
+            release_route_signature(signature_token)
             release_route_gate_host(host_token)
+
+    def _check_declared_path_params(self, application: Application) -> None:
+        signature = route_signature()
+        state = self._path_params_state.get(application)
+        if state is None or state.signature != signature:
+            state = _PathParamsCheck(
+                signature,
+                declared.declared_path_param_problems(
+                    application,
+                    self.guard_decorator or application.settings.get("guard_decorator"),
+                ),
+                state.reported if state else set(),
+            )
+            self._path_params_state[application] = state
+        report_declared_path_params(
+            self.config,
+            application,
+            None,
+            problems=state.problems,
+            reported=state.reported,
+        )
 
     async def _run_pre_processing(
         self, handler: RequestHandler
     ) -> GuardResponse | None:
         guard_request = TornadoGuardRequest(handler)
-        if id(handler.application) not in self._path_params_checked:
-            report_declared_path_params(
-                self.config,
-                handler.application,
-                self.guard_decorator
-                or handler.application.settings.get("guard_decorator"),
-            )
-            self._path_params_checked.add(id(handler.application))
+        self._check_declared_path_params(handler.application)
         try:
             await self._ensure_initialized()
         except GuardRedisError as e:
