@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 
-from guard_core.exceptions import BodyReadFailedError
 from guard_core.protocols.response_protocol import GuardResponse
 from tornado.httputil import HTTPHeaders
 
@@ -69,23 +68,7 @@ class TornadoGuardRequest:
             if values
         }
 
-    def _refuse_streamed_body(self) -> None:
-        # With @stream_request_body, prepare() (where the pipeline runs) comes before
-        # the first data_received(), so request.body is empty while a body is on the
-        # wire. Scanning that empty body would pass a payload, so the read fails and
-        # the engine answers as for any body it cannot read.
-        if not getattr(self._handler, "_stream_request_body", False):
-            return
-        headers = self._request.headers
-        declared = headers.get("Content-Length", "").strip()
-        if declared != "0" and (declared or "Transfer-Encoding" in headers):
-            raise BodyReadFailedError(
-                "a @stream_request_body handler streams its body after the "
-                "security checks ran, so the body cannot be scanned"
-            )
-
     async def body(self) -> bytes:
-        self._refuse_streamed_body()
         return self._request.body or b""
 
     async def read_body_prefix_until_idle(
@@ -93,7 +76,6 @@ class TornadoGuardRequest:
     ) -> bytes:
         if max_bytes <= 0:
             return b""
-        self._refuse_streamed_body()
         return (self._request.body or b"")[:max_bytes]
 
     @property
