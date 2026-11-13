@@ -8,7 +8,7 @@ from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from guard_core.decorators.base import RouteConfig
+from guard_core.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard_core.handlers.cloud_handler import cloud_handler_for
 from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
@@ -385,18 +385,21 @@ async def test_run_pre_processing_triggers_usage_rules(
 ) -> None:
     from guard_core.handlers.behavior_handler import BehaviorRule
 
-    decorator = MagicMock()
-    decorator.get_route_config = MagicMock()
+    decorator = BaseSecurityDecorator(simple_middleware.config)
     route_config = RouteConfig()
     route_config.behavior_rules = [BehaviorRule(rule_type="usage", threshold=1)]
-    decorator.get_route_config.return_value = route_config
     simple_middleware.set_decorator_handler(decorator)
 
     endpoint = _StampedEndpoint("route-x")
     handler = _make_handler(endpoint_value=endpoint)
-    with patch.object(
-        simple_middleware.behavioral_processor, "process_usage_rules", new=AsyncMock()
-    ) as mock_rules:
+    with (
+        patch.object(decorator, "get_route_config", return_value=route_config),
+        patch.object(
+            simple_middleware.behavioral_processor,
+            "process_usage_rules",
+            new=AsyncMock(),
+        ) as mock_rules,
+    ):
         await simple_middleware.run_pre_processing(handler)
         mock_rules.assert_awaited()
 

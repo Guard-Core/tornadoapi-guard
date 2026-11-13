@@ -312,13 +312,12 @@ class SecurityMiddleware:
         return self._initialized
 
     async def _ensure_initialized(self) -> None:
-        if self._is_initialized():
-            return
-        async with self._init_lock:
-            if self._is_initialized():
-                return
-            await self.initialize()
-            self._initialized = True
+        if not self._is_initialized():
+            async with self._init_lock:
+                if not self._is_initialized():
+                    await self.initialize()
+                    self._initialized = True
+        await self.handler_initializer.complete_decorator_adoption()
 
     def _build_event_bus_and_contexts(self) -> None:
         if self.handler_initializer.composite_handler is not None:
@@ -400,8 +399,17 @@ class SecurityMiddleware:
     def set_decorator_handler(
         self, decorator_handler: BaseSecurityDecorator | None
     ) -> None:
+        # The engine goes first: it can raise, and then nothing here changes. The
+        # contexts bind after it returns.
+        initializer = self.handler_initializer
+        initializer.adopt_decorator(decorator_handler)
+        self.geo_ip_handler = initializer.geo_ip_handler
         self.guard_decorator = decorator_handler
-        self.handler_initializer.guard_decorator = decorator_handler
+        self.route_resolver.context.guard_decorator = decorator_handler
+        self.response_factory.context.guard_decorator = decorator_handler
+        behavioral = self.behavioral_processor.context
+        behavioral.guard_decorator = decorator_handler
+        behavioral.behavior_tracker = initializer.behavior_tracker
 
     async def _check_time_window(self, time_restrictions: dict[str, str]) -> bool:
         result: bool = await self.validator.check_time_window(time_restrictions)
@@ -821,8 +829,6 @@ class SecurityMiddleware:
     async def initialize(self) -> None:
         if not self.security_pipeline:
             self._build_security_pipeline()
-
-        self.handler_initializer.guard_decorator = self.guard_decorator
 
         await self.handler_initializer.initialize_redis_handlers()
         self.geo_ip_handler = self.handler_initializer.geo_ip_handler
