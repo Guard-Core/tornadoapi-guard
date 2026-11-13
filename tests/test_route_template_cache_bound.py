@@ -20,13 +20,19 @@ class _Handler(RequestHandler):
         return None
 
 
+_KEPT: list[Application] = []
+
+
+def _serve(middleware: SecurityMiddleware, application: Application) -> None:
+    _KEPT.append(application)
+    middleware._note_application(application)
+
+
 def _middleware() -> SecurityMiddleware:
     middleware = SecurityMiddleware(
         config=SecurityConfig(enable_redis=False, trusted_proxies=[])
     )
-    middleware._routing_application = Application(
-        [(r"/ok", _Handler), (r"/long/(.*)", _Handler)]
-    )
+    _serve(middleware, Application([(r"/ok", _Handler), (r"/long/(.*)", _Handler)]))
     return middleware
 
 
@@ -83,7 +89,7 @@ def _two_host_middleware() -> SecurityMiddleware:
     application.add_handlers(
         r"admin\.example", [(r"/items/(?P<admin_item>[0-9]+)", _Handler)]
     )
-    middleware._routing_application = application
+    _serve(middleware, application)
     return middleware
 
 
@@ -151,8 +157,9 @@ def test_a_nested_router_gives_the_whole_template_of_the_innermost_rule() -> Non
             )
         ]
     )
-    middleware._routing_application = Application(
-        [Rule(PathMatches(r"/orgs/(?P<org>[0-9]+)/.*"), inner)]
+    _serve(
+        middleware,
+        Application([Rule(PathMatches(r"/orgs/(?P<org>[0-9]+)/.*"), inner)]),
     )
 
     assert middleware.route_template("/orgs/5/items/9") == (
@@ -165,9 +172,7 @@ def test_a_nested_application_gives_the_whole_template_of_the_innermost_rule() -
         config=SecurityConfig(enable_redis=False, trusted_proxies=[])
     )
     inner = Application([(r"/sub/items/(?P<item_id>[0-9]+)", _Handler)])
-    middleware._routing_application = Application(
-        [Rule(PathMatches(r"/sub/.*"), inner)]
-    )
+    _serve(middleware, Application([Rule(PathMatches(r"/sub/.*"), inner)]))
 
     assert middleware.route_template("/sub/items/5") == (
         "/sub/items/(?P<item_id>[0-9]+)$"

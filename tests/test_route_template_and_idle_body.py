@@ -17,7 +17,7 @@ from tornadoapi_guard.adapters import TornadoGuardRequest
 
 
 def _application_of(middleware: SecurityMiddleware) -> tornado.web.Application:
-    application = middleware._routing_application
+    application = middleware._live_application()
     assert application is not None
     return application
 

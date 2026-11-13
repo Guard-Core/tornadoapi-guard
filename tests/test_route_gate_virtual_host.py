@@ -24,7 +24,7 @@ def _middleware(application: Application) -> SecurityMiddleware:
     middleware = SecurityMiddleware(
         config=SecurityConfig(enable_redis=False, trusted_proxies=[])
     )
-    middleware._routing_application = application
+    middleware._note_application(application)
     return middleware
 
 
