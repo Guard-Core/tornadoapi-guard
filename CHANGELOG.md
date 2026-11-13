@@ -18,6 +18,10 @@ Unreleased
 
 - **Fixed** - **A header the handler sets more than once keeps every value.** The response wrapper copied the handler's headers into a dict, so the engine saw only the last value of a repeated header and its CORS `Vary` merge replaced the others. The wrapper now holds Tornado's `HTTPHeaders`, which keeps every value.
 
+- **Fixed (docs)** - **The docs count the checks the factory builds.** They said 17 checks where the engine's default pipeline holds up to 18.
+
+- **Added (test)** - **A test pins what `xheaders` does.** The adapter's client address is Tornado's `request.remote_ip`, so `HTTPServer(xheaders=True)` lets the `X-Real-Ip` header decide the client identity and `False` keeps the peer address, as `docs/tutorial/security/proxy-security.md` says.
+
 - **Fixed (docs)** - **`docs/release-notes.md` and `CHANGELOG.md` carry the same version sections, and a test keeps it true.** `v1.2.0` was marked unreleased though its tag exists (2026-09-30), and `v1.2.0` and `v0.0.1` were missing from the release notes. `tests/test_release_notes_parity.py` compares every section of both files.
 
 - **Changed** - **The adapter imports guard-core internals only from `guard_core.adapter_support`.** It used to import the private `_misconfiguration`, `_misconfiguration_kinds`, `_utils` and `_config_capabilities` modules directly, so an engine refactor could break an installed adapter. The names are the same objects and nothing behaves differently; the module is part of guard-core's stable 5.x surface and a guard-core test pins its names.

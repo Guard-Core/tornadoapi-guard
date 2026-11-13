@@ -66,7 +66,7 @@ SecurityHandler.finish()
     └─ Security headers, CORS headers, custom_response_modifier, written back
 ```
 
-The 17-check security pipeline is identical to the one in fastapi-guard since it lives in `guard_core`. What differs is **where** the pipeline is invoked: the Tornado adapter calls it from `SecurityHandler.prepare()` and runs the response pass from `SecurityHandler.finish()`, rather than from a `dispatch` coroutine.
+The security pipeline (up to 18 checks) is identical to the one in fastapi-guard since it lives in `guard_core`. What differs is **where** the pipeline is invoked: the Tornado adapter calls it from `SecurityHandler.prepare()` and runs the response pass from `SecurityHandler.finish()`, rather than from a `dispatch` coroutine.
 
 Core Components
 ---------------
@@ -99,7 +99,7 @@ async def initialize(self) -> None:
     starting the Tornado server. Safe to await from `main()`.
 
     Tasks performed:
-        - Build the 17-check security pipeline
+        - Build the security pipeline (up to 18 checks)
         - Initialize Redis handlers (if enable_redis is set)
         - Initialize agent integrations (if enable_agent is set)
     """
